@@ -35,12 +35,12 @@ class VLMExtractor:
         self.api_key = settings.QWEN_API_KEY
         self.model = settings.QWEN_MODEL
         self.base_url = settings.QWEN_BASE_URL.rstrip("/")
-        self.timeout = settings.VLM_TIMEOUT
+        self.timeout = max(settings.VLM_TIMEOUT, 180)  # Минимум 180 сек
 
         if not self.api_key:
             logger.warning("QWEN_API_KEY not set — VLM extraction will fail")
         else:
-            logger.info(f"VLMExtractor initialized: Qwen ({self.model}) @ {self.base_url}")
+            logger.info(f"VLMExtractor initialized: Qwen ({self.model}) @ {self.base_url}, timeout={self.timeout}s")
 
     def extract(self, image_bytes: bytes) -> Dict[str, Any]:
         empty_result = {
@@ -55,11 +55,12 @@ class VLMExtractor:
 
         return self._extract_qwen(image_bytes, empty_result)
 
-    def _compress_image(self, image_bytes: bytes, max_size: int = 1600, quality: int = 90) -> bytes:
+    def _compress_image(self, image_bytes: bytes, max_size: int = 1600, quality: int = 85) -> bytes:
         """Сжимает изображение для ускорения отправки в Qwen API."""
         img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
         original_size = len(image_bytes)
 
+        # Всегда сжимаем большие изображения
         if max(img.size) > max_size:
             ratio = max_size / max(img.size)
             new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
@@ -70,8 +71,12 @@ class VLMExtractor:
             logger.info(f"Image compressed: {original_size/1024:.0f}KB -> {len(compressed)/1024:.0f}KB ({img.size[0]}x{img.size[1]})")
             return compressed
 
-        logger.info(f"Image kept original: {original_size/1024:.0f}KB ({img.size[0]}x{img.size[1]})")
-        return image_bytes
+        # Даже для маленьких — JPEG compression
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=quality, optimize=True)
+        compressed = buf.getvalue()
+        logger.info(f"Image JPEG compressed: {original_size/1024:.0f}KB -> {len(compressed)/1024:.0f}KB")
+        return compressed
 
     def _extract_qwen(self, image_bytes: bytes, empty_result: Dict[str, Any]) -> Dict[str, Any]:
         # Сжатие изображения
@@ -99,10 +104,10 @@ class VLMExtractor:
             "Authorization": f"Bearer {self.api_key}"
         }
 
-        max_retries = 2
+        max_retries = 3
         for attempt in range(max_retries):
             try:
-                logger.info(f"Sending request to Qwen API (attempt {attempt+1}/{max_retries})")
+                logger.info(f"Sending request to Qwen API (attempt {attempt+1}/{max_retries}, timeout={self.timeout}s)")
                 with httpx.Client(
                     timeout=httpx.Timeout(self.timeout + 60, connect=30.0, read=self.timeout)
                 ) as client:
@@ -122,14 +127,18 @@ class VLMExtractor:
                     logger.info(f"Extraction success: {filled}/11 fields filled")
                     return result
 
+            except httpx.ReadTimeout:
+                logger.warning(f"Qwen API read timeout (attempt {attempt+1}/{max_retries})")
             except httpx.HTTPStatusError as e:
-                logger.error(f"HTTP error (attempt {attempt+1}): {e.response.status_code} - {e.response.text}")
+                logger.error(f"HTTP error (attempt {attempt+1}): {e.response.status_code} - {e.response.text[:200]}")
             except Exception as e:
                 logger.error(f"Qwen API error (attempt {attempt+1}): {type(e).__name__}: {e}")
 
             if attempt < max_retries - 1:
                 import time
-                time.sleep(2 ** attempt)  # exponential backoff
+                wait = 5 * (attempt + 1)  # 5s, 10s, 15s
+                logger.info(f"Retrying in {wait}s...")
+                time.sleep(wait)
 
         return empty_result
 
