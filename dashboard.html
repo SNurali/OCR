@@ -1654,7 +1654,19 @@
                     validation: {
                         overall_confidence: result.confidence || 0,
                         all_valid: true,
-                        checks: []
+                        checks: {
+                            first_name: !!result.first_name,
+                            last_name: !!result.last_name,
+                            middle_name: !!result.middle_name,
+                            birth_date: !!result.birth_date,
+                            gender: !!result.gender,
+                            nationality: !!result.nationality,
+                            passport_number: !!result.passport_number,
+                            issue_date: !!result.issue_date,
+                            expiry_date: !!result.expiry_date,
+                            issued_by: !!result.issued_by,
+                            pinfl: !!result.pinfl,
+                        }
                     },
                     raw_text: ''
                 };
