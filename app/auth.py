@@ -16,7 +16,7 @@ optional_oauth2_scheme = OAuth2PasswordBearer(
 )
 
 DEFAULT_ADMIN_USERNAME = "admin"
-DEFAULT_ADMIN_PASSWORD = "admin_secure_password"
+DEFAULT_ADMIN_PASSWORD = "admin123"
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
