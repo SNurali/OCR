@@ -1,0 +1,1783 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCRUZ Passport API - Дашборд</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        /* Login Screen */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 400px;
+        }
+        .login-box h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .btn:hover { transform: translateY(-2px); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-small {
+            width: auto;
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+        .btn-danger { background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); }
+        .btn-success { background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); }
+        .btn-warning { background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); }
+        .error { color: #e74c3c; font-size: 14px; margin-top: 10px; text-align: center; }
+        .success { color: #27ae60; font-size: 14px; margin-top: 10px; text-align: center; }
+        .warning { color: #b45309; font-size: 14px; margin-top: 10px; text-align: center; }
+        
+        /* Dashboard */
+        .dashboard { display: none; }
+        .dashboard.active { display: block; }
+        
+        /* Header */
+        .header {
+            background: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header h1 { color: #333; font-size: 24px; }
+        .header-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .user-badge {
+            padding: 8px 16px;
+            background: #f0f0f0;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+        .role-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .role-admin { background: #e74c3c; color: white; }
+        .role-observer { background: #3498db; color: white; }
+        
+        /* Navigation */
+        .nav-tabs {
+            background: white;
+            padding: 0 30px;
+            display: flex;
+            gap: 10px;
+            border-bottom: 2px solid #eee;
+        }
+        .nav-tab {
+            padding: 15px 25px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        .nav-tab:hover { color: #667eea; }
+        .nav-tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        
+        /* Content */
+        .content {
+            padding: 30px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        /* Filters Bar */
+        .filters-bar {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .filter-group label {
+            font-size: 13px;
+            color: #64748b;
+            font-weight: 600;
+        }
+        .filter-group input, .filter-group select {
+            padding: 8px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #334155;
+            outline: none;
+        }
+        .filter-controls {
+            display: flex;
+            gap: 10px;
+            margin-left: auto;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .stat-card h3 {
+            color: #888;
+            font-size: 14px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        .stat-card .value {
+            font-size: 36px;
+            font-weight: 700;
+            color: #667eea;
+        }
+        .stat-meta {
+            margin-top: 8px;
+            color: #64748b;
+            font-size: 13px;
+        }
+        .stat-meta.muted {
+            font-size: 12px;
+        }
+        .stat-card.approved .value { color: #27ae60; }
+        .stat-card.rejected .value { color: #e74c3c; }
+        .stat-card.pending .value { color: #f39c12; }
+        .analytics-note {
+            background: rgba(255, 255, 255, 0.88);
+            border-left: 4px solid #667eea;
+            border-radius: 8px;
+            color: #334155;
+            margin-bottom: 20px;
+            padding: 14px 16px;
+        }
+        
+        /* Charts Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .chart-card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .chart-card h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+        .bar-chart {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .bar-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .bar-label {
+            width: 100px;
+            font-size: 14px;
+            color: #555;
+        }
+        .bar-container {
+            flex: 1;
+            background: #f0f0f0;
+            border-radius: 5px;
+            height: 30px;
+            overflow: hidden;
+        }
+        .bar {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 5px;
+            transition: width 0.5s;
+        }
+        .bar-value {
+            width: 60px;
+            text-align: right;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+        .chart-empty {
+            color: #64748b;
+            font-size: 14px;
+            padding: 12px 0;
+        }
+        
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #555;
+        }
+        tr:hover { background: #f8f9fa; }
+        
+        /* Upload Section */
+        .upload-section {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        .upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: #eef2ff;
+        }
+
+        .ocr-test-form {
+            display: grid;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .ocr-test-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+        .ocr-test-card {
+            background: #f8f9ff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 16px;
+        }
+        .ocr-test-card-label {
+            color: #64748b;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 8px;
+        }
+        .ocr-test-card-value {
+            color: #1e293b;
+            font-size: 20px;
+            font-weight: 700;
+        }
+        .ocr-test-panels {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            margin-top: 24px;
+        }
+        .ocr-test-panel {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .ocr-test-panel h3 {
+            margin-bottom: 16px;
+            color: #1e293b;
+        }
+        .ocr-test-fields {
+            display: grid;
+            gap: 12px;
+        }
+        .ocr-test-field {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            align-items: flex-start;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .ocr-test-field:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+        .ocr-test-field-label {
+            color: #475569;
+            font-weight: 600;
+        }
+        .ocr-test-field-value {
+            color: #0f172a;
+            text-align: right;
+            word-break: break-word;
+        }
+        .ocr-test-status {
+            margin-top: 20px;
+        }
+        .ocr-test-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .ocr-test-badge.valid {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .ocr-test-badge.invalid {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .ocr-test-pre {
+            background: #0f172a;
+            color: #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 13px;
+            line-height: 1.5;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #888;
+        }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            font-size: 18px;
+        }
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 4px solid white;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Section visibility */
+        .section { display: none; }
+        .section.active { display: block; }
+        
+        /* Admin only warning */
+        .admin-only {
+            display: none;
+        }
+        .admin-only.visible {
+            display: block;
+        }
+        .observer-warning {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div class="login-container" id="loginContainer">
+        <div class="login-box">
+            <h1>🔐 OCRUZ Passport API</h1>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="username" name="username" autocomplete="username" required placeholder="admin">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="password" name="password" autocomplete="current-password" required>
+                </div>
+                <button type="submit" class="btn">Войти</button>
+                <div class="error" id="loginError"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="dashboard" id="dashboard">
+        <!-- Header -->
+        <div class="header">
+            <h1>📊 OCRUZ Passport API</h1>
+            <div class="header-info">
+                <div class="user-badge">
+                    👤 <span id="currentUser">admin</span>
+                    <span class="role-badge" id="userRole">admin</span>
+                </div>
+                <button class="btn btn-small btn-danger" onclick="logout()">Выйти</button>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showSection('analytics', this)">📈 Аналитика</button>
+            <button class="nav-tab" onclick="showSection('upload', this)">📷 Загрузка паспортов</button>
+            <button class="nav-tab" onclick="showSection('ocrTest', this)">🧪 OCR тест</button>
+            <button class="nav-tab admin-only" onclick="showSection('users', this)">👥 Пользователи</button>
+            <button class="nav-tab" onclick="showSection('reports', this)">📋 Отчеты</button>
+            <button class="nav-tab" onclick="showSection('incoming', this)">📥 Входящие паспорта</button>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <!-- Analytics Section -->
+            <div id="analytics" class="section active">
+                <!-- Filters Bar -->
+                <div class="filters-bar" id="analyticsFilters">
+                    <div class="filter-group">
+                        <label>Период с:</label>
+                        <input type="date" id="filterStartDate">
+                    </div>
+                    <div class="filter-group">
+                        <label>По:</label>
+                        <input type="date" id="filterEndDate">
+                    </div>
+                    <div class="filter-group">
+                        <label>Гражданство:</label>
+                        <select id="filterCitizenship">
+                            <option value="all">Все</option>
+                            <option value="local">Только местные (UZB)</option>
+                            <option value="foreign">Только иностранцы (Не UZB)</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Пол:</label>
+                        <select id="filterGender">
+                            <option value="all">Все</option>
+                            <option value="male">Мужчины</option>
+                            <option value="female">Женщины</option>
+                        </select>
+                    </div>
+                    <div class="filter-controls">
+                        <button class="btn" style="background:#667eea;font-size:14px;padding:8px 16px" onclick="loadStatistics()">Применить</button>
+                        <button class="btn btn-warning" style="font-size:14px;padding:8px 16px" onclick="resetFilters()">Сбросить</button>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Распознано как паспорт</h3>
+                        <div class="value" id="totalPassports">0</div>
+                        <div class="stat-meta">из <span id="totalUploads">0</span> загрузок</div>
+                        <div class="stat-meta muted">Не распознано: <span id="unrecognizedUploads">0</span></div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Точность OCR</h3>
+                        <div class="value" id="avgConfidence">0%</div>
+                        <div class="stat-meta">средняя уверенность</div>
+                    </div>
+                    <div class="stat-card approved">
+                        <h3>Мужчины</h3>
+                        <div class="value" id="maleCount">0</div>
+                    </div>
+                    <div class="stat-card rejected">
+                        <h3>Женщины</h3>
+                        <div class="value" id="femaleCount">0</div>
+                    </div>
+                    <div class="stat-card pending">
+                        <h3>Средний возраст</h3>
+                        <div class="value" id="avgAge">0</div>
+                    </div>
+                </div>
+
+                <div class="analytics-note" id="analyticsNote">
+                    Аналитика строится только по загрузкам, где OCR нашел паспортные поля.
+                </div>
+
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h3>👥 По полу</h3>
+                        <div class="bar-chart" id="genderChart"></div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>📅 По возрасту</h3>
+                        <div class="bar-chart" id="ageChart"></div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>🌍 По гражданству</h3>
+                        <div class="bar-chart" id="nationalityChart"></div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>📈 По месяцам</h3>
+                        <div class="bar-chart" id="monthlyChart"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upload Section -->
+            <div id="upload" class="section">
+                <div class="upload-section admin-only">
+                    <h2>📷 Загрузка паспорта на распознавание</h2>
+                    <p style="color: #666; margin-bottom: 20px;">Загрузите фото паспорта для автоматического распознавания</p>
+                    
+                    <div class="upload-area" id="uploadArea">
+                        <div style="font-size: 48px; margin-bottom: 10px;">📁</div>
+                        <p>Перетащите файл сюда или кликните для выбора</p>
+                        <p style="color: #888; font-size: 14px; margin-top: 10px;">JPG, PNG, TIFF (макс. 10MB)</p>
+                        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                    </div>
+                    
+                    <div id="uploadProgress" style="margin-top: 20px; display: none;">
+                        <div style="background: #f0f0f0; border-radius: 5px; height: 20px; overflow: hidden;">
+                            <div id="progressBar" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 100%; width: 0%; transition: width 0.3s;"></div>
+                        </div>
+                        <p id="progressText" style="text-align: center; margin-top: 10px; color: #666;">Загрузка...</p>
+                    </div>
+                    
+                    <div id="uploadResult" style="margin-top: 20px;"></div>
+                </div>
+                
+                <div class="observer-warning admin-only" style="display: none;">
+                    ⚠️ Только администраторы могут загружать паспорта на распознавание
+                </div>
+            </div>
+
+            <div id="ocrTest" class="section">
+                <div class="chart-card">
+                    <h2>🧪 Тест распознавания фото паспорта</h2>
+                    <p style="color: #666; margin-top: 10px;">Загрузите фотографию паспорта и сразу посмотрите, какие поля OCR смог извлечь без создания отдельной заявки.</p>
+
+                    <form id="ocrTestForm" class="ocr-test-form">
+                        <div class="form-group">
+                            <label for="ocrTestFile">Фотография паспорта</label>
+                            <input type="file" id="ocrTestFile" accept="image/*" required>
+                        </div>
+                        <button type="submit" class="btn" id="ocrTestSubmit">Запустить OCR тест</button>
+                    </form>
+
+                    <div class="ocr-test-status" id="ocrTestStatus"></div>
+                    <div id="ocrTestResult"></div>
+                </div>
+            </div>
+
+            <!-- Users Section (Admin Only) -->
+            <div id="users" class="section admin-only">
+                <div class="chart-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2>👥 Управление пользователями</h2>
+                        <button class="btn btn-small btn-success" onclick="openUserModal()">+ Создать пользователя</button>
+                    </div>
+                    
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Роль</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Reports Section -->
+            <div id="reports" class="section">
+                <div class="chart-card">
+                    <h2>📋 Детальные отчеты</h2>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px;">
+                        <button class="btn" onclick="loadReport('gender')">👥 Отчет по полу</button>
+                        <button class="btn" onclick="loadReport('age')">📅 Отчет по возрасту</button>
+                        <button class="btn" onclick="loadReport('nationality')">🌍 Отчет по гражданству</button>
+                        <button class="btn" onclick="loadReport('time')">⏰ Поступления за период</button>
+                        <button class="btn" onclick="loadReport('monthly')">📊 По месяцам</button>
+                        <button class="btn" onclick="loadReport('yearly')">📈 По годам</button>
+                        <button class="btn" onclick="loadReport('gender-age')">👥 Пол по возрасту</button>
+                        <button class="btn" onclick="loadReport('daily')">📅 По дням</button>
+                    </div>
+                    
+                    <div id="reportResult" style="margin-top: 30px;"></div>
+                </div>
+            </div>
+
+            <!-- Incoming Passports Section -->
+            <div id="incoming" class="section">
+                <div class="chart-card">
+                    <h2>📥 Входящие паспорта — все распарсенные документы</h2>
+
+                    <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; align-items: center;">
+                        <input type="text" id="incomingSearch" placeholder="🔍 Поиск по фамилии, имени, ПИНФЛ..." 
+                               style="flex: 1; min-width: 250px; padding: 10px 16px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;"
+                               oninput="filterIncomingPassports()">
+                        <select id="incomingNatFilter" onchange="loadIncomingPassports()" style="padding: 10px 16px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                            <option value="">Все гражданства</option>
+                            <option value="O'ZBEKISTON">O'ZBEKISTON</option>
+                            <option value="RUS">Россия</option>
+                            <option value="KAZ">Казахстан</option>
+                            <option value="KGZ">Кыргызстан</option>
+                        </select>
+                        <button class="btn btn-small" onclick="loadIncomingPassports()" style="padding: 10px 24px;">🔄 Обновить</button>
+                    </div>
+
+                    <div style="margin-top: 20px; padding: 12px 16px; background: #f0f4ff; border-radius: 8px; font-size: 14px; color: #555;">
+                        Всего записей: <strong id="incomingTotal">0</strong> | Показано: <strong id="incomingShown">0</strong>
+                    </div>
+
+                    <div style="overflow-x: auto; margin-top: 20px;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 13px;" id="incomingTable">
+                            <thead>
+                                <tr style="background: #f8f9ff; border-bottom: 2px solid #e0e0e0;">
+                                    <th style="padding: 10px 8px; text-align: left; color: #555;">#</th>
+                                    <th style="padding: 10px 8px; text-align: left; color: #555;">Фамилия</th>
+                                    <th style="padding: 10px 8px; text-align: left; color: #555;">Имя</th>
+                                    <th style="padding: 10px 8px; text-align: left; color: #555;">Отчество</th>
+                                    <th style="padding: 10px 8px; text-align: left; color: #555;">Дата рожд.</th>
+                                    <th style="padding: 10px 8px; text-align: left; color: #555;">Пол</th>
+                                    <th style="padding: 10px 8px; text-align: left; color: #555;">Гражданство</th>
+                                    <th style="padding: 10px 8px; text-align: left; color: #555;">Паспорт</th>
+                                    <th style="padding: 10px 8px; text-align: left; color: #555;">ПИНФЛ</th>
+                                    <th style="padding: 10px 8px; text-align: left; color: #555;">Дата выдачи</th>
+                                    <th style="padding: 10px 8px; text-align: left; color: #555;">Срок</th>
+                                    <th style="padding: 10px 8px; text-align: left; color: #555;">Оценка</th>
+                                    <th style="padding: 10px 8px; text-align: left; color: #555;">Дата</th>
+                                </tr>
+                            </thead>
+                            <tbody id="incomingTableBody">
+                                <tr><td colspan="13" style="text-align: center; padding: 40px; color: #888;">Нажмите «Обновить» для загрузки данных</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div id="incomingPagination" style="display: flex; justify-content: center; gap: 8px; margin-top: 20px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Modal -->
+    <div class="modal" id="userModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Создать пользователя</h2>
+                <button class="modal-close" onclick="closeUserModal()">&times;</button>
+            </div>
+            <form id="userForm">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="newUsername" name="newUsername" autocomplete="username" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="newPassword" name="newPassword" autocomplete="new-password" required>
+                </div>
+                <div class="form-group">
+                    <label>Роль</label>
+                    <select id="newRole" required>
+                        <option value="observer">Наблюдатель (только просмотр)</option>
+                        <option value="admin">Администратор (полный доступ)</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn">Создать</button>
+                <div class="error" id="userError"></div>
+                <div class="success" id="userSuccess"></div>
+            </form>
+        </div>
+    </div>
+
+    <div class="loading" id="loading" style="display: none;">
+        <div class="spinner"></div>
+        <div>Загрузка...</div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        let token = localStorage.getItem('dashboard_token');
+        let currentUser = null;
+
+        // Initialize
+        if (token) {
+            validateToken();
+        }
+
+        // Login
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch(API_BASE + '/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ username, password })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    token = data.access_token;
+                    localStorage.setItem('dashboard_token', token);
+                    validateToken();
+                } else {
+                    const error = await response.json();
+                    document.getElementById('loginError').textContent = error.detail || 'Ошибка входа';
+                }
+            } catch (err) {
+                document.getElementById('loginError').textContent = 'Ошибка подключения';
+            }
+        });
+
+        // Validate token and load user info
+        async function validateToken() {
+            try {
+                const response = await fetch(API_BASE + '/admin/users/me', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (response.ok) {
+                    currentUser = await response.json();
+                    showDashboard();
+                } else {
+                    logout();
+                }
+            } catch (err) {
+                logout();
+            }
+        }
+
+        // Show dashboard
+        function showDashboard() {
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('dashboard').classList.add('active');
+            document.getElementById('currentUser').textContent = currentUser.username;
+            document.getElementById('userRole').textContent = currentUser.role;
+            document.getElementById('userRole').className = 'role-badge role-' + currentUser.role;
+
+            // Show/hide admin sections
+            const adminSections = document.querySelectorAll('.admin-only');
+            adminSections.forEach(el => {
+                if (currentUser.role === 'admin') {
+                    el.classList.add('visible');
+                    el.style.display = '';
+                } else {
+                    el.classList.remove('visible');
+                    if (el.id !== 'upload') {
+                        el.style.display = 'none';
+                    }
+                }
+            });
+
+            // Hide upload section for observer
+            if (currentUser.role !== 'admin') {
+                document.getElementById('upload').style.display = 'none';
+            }
+
+            loadStatistics();
+        }
+
+        // Logout
+        function logout() {
+            token = null;
+            currentUser = null;
+            localStorage.removeItem('dashboard_token');
+            document.getElementById('loginContainer').style.display = 'flex';
+            document.getElementById('dashboard').classList.remove('active');
+            resetOcrTest();
+        }
+
+        // Show section
+        function showSection(sectionId, tabButton) {
+            document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(sectionId).classList.add('active');
+            if (tabButton) {
+                tabButton.classList.add('active');
+            }
+
+            if (sectionId === 'analytics') loadStatistics();
+            if (sectionId === 'users' && currentUser.role === 'admin') loadUsers();
+        }
+
+        function withToken(path) {
+            const separator = path.includes('?') ? '&' : '?';
+            return API_BASE + path + separator + 'token=' + encodeURIComponent(token);
+        }
+
+        function withTokenAndFilters(path) {
+            let url = API_BASE + path;
+            const params = new URLSearchParams();
+            if (path.includes('?')) {
+                const parts = path.split('?');
+                url = API_BASE + parts[0];
+                const existingParams = new URLSearchParams(parts[1]);
+                for (const [key, val] of existingParams.entries()) {
+                    params.append(key, val);
+                }
+            }
+
+            params.append('token', token);
+            
+            const start = document.getElementById('filterStartDate')?.value;
+            const end = document.getElementById('filterEndDate')?.value;
+            const citizenship = document.getElementById('filterCitizenship')?.value || 'all';
+            const gender = document.getElementById('filterGender')?.value || 'all';
+
+            if (start) params.append('start_date', start);
+            if (end) params.append('end_date', end);
+            if (citizenship && citizenship !== 'all') params.append('citizenship', citizenship);
+            if (gender && gender !== 'all') params.append('gender', gender);
+
+            return url + '?' + params.toString();
+        }
+
+        function resetFilters() {
+            document.getElementById('filterStartDate').value = '';
+            document.getElementById('filterEndDate').value = '';
+            document.getElementById('filterCitizenship').value = 'all';
+            document.getElementById('filterGender').value = 'all';
+            loadStatistics();
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function formatPercent(value) {
+            return `${(Number(value || 0) * 100).toFixed(1)}%`;
+        }
+
+        async function readErrorMessage(response) {
+            const contentType = response.headers.get('content-type') || '';
+            if (contentType.includes('application/json')) {
+                const payload = await response.json().catch(() => null);
+                return payload?.detail || payload?.message || 'Ошибка запроса';
+            }
+
+            return await response.text().catch(() => 'Ошибка запроса');
+        }
+
+        async function fetchJson(url, options = {}) {
+            const response = await fetch(url, options);
+            if (!response.ok) {
+                throw new Error(await readErrorMessage(response));
+            }
+
+            return response.json();
+        }
+
+        function getVisibleMonthlyData(months) {
+            if (!Array.isArray(months) || !months.length) {
+                return [];
+            }
+
+            const currentMonthIndex = new Date().getMonth();
+            const startIndex = Math.max(0, currentMonthIndex - 5);
+            const visibleMonths = months.slice(startIndex, currentMonthIndex + 1);
+            const visibleTotal = visibleMonths.reduce((sum, month) => sum + Number(month.count || 0), 0);
+
+            return visibleMonths.map(month => ({
+                label: String(month.month_name || '').slice(0, 3),
+                value: Number(month.count || 0),
+                percent: visibleTotal ? (Number(month.count || 0) / visibleTotal) * 100 : 0,
+            }));
+        }
+
+        function hasRecognizedPassportData(result) {
+            return Boolean(
+                result?.passport_number
+                || result?.birth_date
+                || result?.pinfl
+                || result?.gender
+                || result?.nationality
+                || result?.issue_date
+                || result?.expiry_date
+                || result?.mrz_valid
+            );
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        async function waitForPassportResult(taskId, maxAttempts = 15, delayMs = 2000) {
+            for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+                const status = await fetchJson(API_BASE + '/passport/status/' + encodeURIComponent(taskId));
+                if (status.status === 'completed') {
+                    return fetchJson(API_BASE + '/passport/result/' + encodeURIComponent(taskId));
+                }
+
+                await sleep(delayMs);
+            }
+
+            throw new Error('OCR еще обрабатывает файл. Проверьте результат чуть позже.');
+        }
+
+        // Load statistics
+        async function loadStatistics() {
+            showLoading(true);
+            try {
+                const [summary, gender, age, nationality, monthly] = await Promise.all([
+                    fetchJson(withTokenAndFilters('/analytics/summary')),
+                    fetchJson(withTokenAndFilters('/analytics/gender-report')),
+                    fetchJson(withTokenAndFilters('/analytics/age-report')),
+                    fetchJson(withTokenAndFilters('/analytics/nationality-report')),
+                    fetchJson(withTokenAndFilters('/analytics/monthly-stats')),
+                ]);
+
+                const totalUploads = Number(summary.total_uploads ?? summary.total_passports ?? 0);
+                const recognizedPassports = Number(summary.total_passports ?? 0);
+                const unrecognizedUploads = Number(
+                    summary.unrecognized_uploads ?? Math.max(totalUploads - recognizedPassports, 0)
+                );
+
+                // Update stats
+                document.getElementById('totalPassports').textContent = recognizedPassports;
+                document.getElementById('totalUploads').textContent = totalUploads;
+                document.getElementById('unrecognizedUploads').textContent = unrecognizedUploads;
+                
+                const avgConfidence = summary.average_confidence ?? 0;
+                document.getElementById('avgConfidence').textContent = isNaN(avgConfidence) ? '0%' : formatPercent(avgConfidence);
+                
+                document.getElementById('maleCount').textContent = gender.male.count;
+                document.getElementById('femaleCount').textContent = gender.female.count;
+                document.getElementById('avgAge').textContent = summary.average_age;
+                document.getElementById('analyticsNote').textContent = unrecognizedUploads > 0
+                    ? `Аналитика строится по ${recognizedPassports} распознанным паспортам из ${totalUploads} загрузок. ${unrecognizedUploads} загрузок требуют ручной проверки.`
+                    : 'Аналитика строится только по загрузкам, где OCR нашел паспортные поля.';
+
+                // Gender chart
+                renderBarChart('genderChart', [
+                    { label: 'Мужчины', value: gender.male.count, percent: gender.male.percent },
+                    { label: 'Женщины', value: gender.female.count, percent: gender.female.percent }
+                ]);
+
+                // Age chart
+                const ageData = Object.entries(age.groups).map(([label, value]) => ({
+                    label,
+                    value,
+                    percent: age.percentages[label]
+                }));
+                renderBarChart('ageChart', ageData);
+
+                // Nationality chart
+                const natData = nationality.nationalities.slice(0, 5).map(n => ({
+                    label: n.name,
+                    value: n.count,
+                    percent: n.percent
+                }));
+                renderBarChart('nationalityChart', natData);
+
+                // Monthly chart
+                const monthData = getVisibleMonthlyData(monthly.months);
+                renderBarChart('monthlyChart', monthData);
+
+            } catch (err) {
+                console.error(err);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Render bar chart
+        function renderBarChart(containerId, data) {
+            const container = document.getElementById(containerId);
+            if (!Array.isArray(data) || !data.length) {
+                container.innerHTML = '<div class="chart-empty">Нет данных</div>';
+                return;
+            }
+
+            container.innerHTML = data.map(item => `
+                <div class="bar-item">
+                    <span class="bar-label">${escapeHtml(item.label)}</span>
+                    <div class="bar-container">
+                        <div class="bar" style="width: ${Math.max(0, Math.min(100, Number.isFinite(Number(item.percent)) ? Number(item.percent) : 0))}%"></div>
+                    </div>
+                    <span class="bar-value">${escapeHtml(item.value)}</span>
+                </div>
+            `).join('');
+        }
+
+        function renderOcrTestResult(result) {
+            const extracted = result.extracted_fields || {};
+            const checks = result.validation?.checks || {};
+            const mrzContent = (result.mrz_lines || []).length
+                ? result.mrz_lines.join('\n')
+                : 'MRZ не найдена';
+
+            const badge = (isValid) => `<span class="ocr-test-badge ${isValid ? 'valid' : 'invalid'}">${isValid ? 'OK' : 'Проверить'}</span>`;
+            const fieldRows = [
+                ['Фамилия', extracted.last_name, checks.last_name],
+                ['Имя', extracted.first_name, checks.first_name],
+                ['Отчество', extracted.middle_name, checks.middle_name],
+                ['Дата рождения', extracted.birth_date, checks.birth_date],
+                ['Пол', extracted.gender, checks.gender],
+                ['Гражданство', extracted.nationality, checks.nationality],
+                ['Номер паспорта', extracted.passport_number, checks.passport_number],
+                ['Серия', extracted.passport_series, null],
+                ['Дата выдачи', extracted.issue_date, checks.issue_date],
+                ['Срок действия', extracted.expiry_date, checks.expiry_date],
+                ['Кем выдан', extracted.issued_by, checks.issued_by],
+                ['ПИНФЛ', extracted.pinfl, checks.pinfl],
+            ].map(([label, value, isValid]) => `
+                <div class="ocr-test-field">
+                    <div class="ocr-test-field-label">${escapeHtml(label)}</div>
+                    <div class="ocr-test-field-value">
+                        <div>${escapeHtml(value || 'Не найдено')}</div>
+                        ${typeof isValid === 'boolean' ? badge(isValid) : ''}
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('ocrTestResult').innerHTML = `
+                <div class="ocr-test-summary">
+                    <div class="ocr-test-card">
+                        <div class="ocr-test-card-label">Файл</div>
+                        <div class="ocr-test-card-value">${escapeHtml(result.filename || '-')}</div>
+                    </div>
+                    <div class="ocr-test-card">
+                        <div class="ocr-test-card-label">Размер изображения</div>
+                        <div class="ocr-test-card-value">${escapeHtml(`${result.image?.width || 0}×${result.image?.height || 0}`)}</div>
+                    </div>
+                    <div class="ocr-test-card">
+                        <div class="ocr-test-card-label">OCR уверенность</div>
+                        <div class="ocr-test-card-value">${escapeHtml(formatPercent(result.ocr_confidence))}</div>
+                    </div>
+                    <div class="ocr-test-card">
+                        <div class="ocr-test-card-label">Итоговая оценка</div>
+                        <div class="ocr-test-card-value">${escapeHtml(formatPercent(result.overall_confidence))}</div>
+                    </div>
+                    <div class="ocr-test-card">
+                        <div class="ocr-test-card-label">Документ найден</div>
+                        <div class="ocr-test-card-value">${result.doc_detected ? 'Да' : 'Нет'}</div>
+                    </div>
+                    <div class="ocr-test-card">
+                        <div class="ocr-test-card-label">MRZ валидна</div>
+                        <div class="ocr-test-card-value">${result.mrz_valid ? 'Да' : 'Нет'}</div>
+                    </div>
+                </div>
+                <div class="ocr-test-panels">
+                    <div class="ocr-test-panel">
+                        <h3>Извлечённые поля</h3>
+                        <div class="ocr-test-fields">${fieldRows}</div>
+                    </div>
+                    <div class="ocr-test-panel">
+                        <h3>MRZ</h3>
+                        <pre class="ocr-test-pre">${escapeHtml(mrzContent)}</pre>
+                    </div>
+                    <div class="ocr-test-panel">
+                        <h3>Сырой OCR текст</h3>
+                        <pre class="ocr-test-pre">${escapeHtml(result.raw_text || 'OCR не вернул текст')}</pre>
+                    </div>
+                </div>
+            `;
+        }
+
+        function resetOcrTest() {
+            document.getElementById('ocrTestForm').reset();
+            document.getElementById('ocrTestStatus').innerHTML = '';
+            document.getElementById('ocrTestResult').innerHTML = '';
+            const submitButton = document.getElementById('ocrTestSubmit');
+            submitButton.disabled = false;
+            submitButton.textContent = 'Запустить OCR тест';
+        }
+
+        // Load users
+        async function loadUsers() {
+            try {
+                const response = await fetch(API_BASE + '/admin/users', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!response.ok) {
+                    throw new Error('Ошибка загрузки пользователей');
+                }
+                const users = await response.json();
+
+                document.getElementById('usersTable').innerHTML = users.map(user => `
+                    <tr>
+                        <td>${user.id}</td>
+                        <td>${user.username}</td>
+                        <td><span class="role-badge role-${user.role}">${user.role}</span></td>
+                        <td>${user.is_active ? '✅ Активен' : '❌ Не активен'}</td>
+                        <td>
+                            ${user.username !== 'admin' ? `
+                                <button class="btn btn-small btn-warning" onclick="resetPassword(${user.id})">Сброс пароля</button>
+                                <button class="btn btn-small btn-danger" onclick="deleteUser(${user.id})">Удалить</button>
+                            ` : '—'}
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error(err);
+                showToast(err.message || 'Ошибка загрузки пользователей', 'error');
+            }
+        }
+
+        // User modal
+        function openUserModal() {
+            document.getElementById('userModal').classList.add('active');
+            document.getElementById('userForm').reset();
+            document.getElementById('userError').textContent = '';
+            document.getElementById('userSuccess').textContent = '';
+        }
+
+        function closeUserModal() {
+            document.getElementById('userModal').classList.remove('active');
+        }
+
+        document.getElementById('userForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('newUsername').value;
+            const password = document.getElementById('newPassword').value;
+            const role = document.getElementById('newRole').value;
+
+            try {
+                const response = await fetch(API_BASE + '/admin/users', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password, role })
+                });
+
+                if (response.ok) {
+                    document.getElementById('userSuccess').textContent = 'Пользователь создан!';
+                    setTimeout(() => {
+                        closeUserModal();
+                        loadUsers();
+                    }, 1000);
+                } else {
+                    const error = await response.json();
+                    document.getElementById('userError').textContent = error.detail || 'Ошибка';
+                }
+            } catch (err) {
+                document.getElementById('userError').textContent = 'Ошибка подключения';
+            }
+        });
+
+        // Delete user
+        async function deleteUser(userId) {
+            if (!confirm('Вы уверены?')) return;
+
+            try {
+                const response = await fetch(API_BASE + '/admin/users/' + userId, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!response.ok) {
+                    const err = await response.json().catch(() => null);
+                    throw new Error(err?.detail || 'Ошибка удаления');
+                }
+                showToast('Пользователь удалён', 'success');
+                loadUsers();
+            } catch (err) {
+                showToast(err.message || 'Ошибка при удалении', 'error');
+            }
+        }
+
+        async function resetPassword(userId) {
+            try {
+                const response = await fetch(API_BASE + '/admin/users/' + userId + '/reset-password', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!response.ok) {
+                    const err = await response.json().catch(() => null);
+                    throw new Error(err?.detail || 'Ошибка сброса пароля');
+                }
+                const result = await response.json();
+                showToast('Временный пароль: ' + result.temporary_password, 'info');
+            } catch (err) {
+                showToast(err.message || 'Ошибка при сбросе пароля', 'error');
+            }
+        }
+
+
+        // Load report
+        async function loadReport(type) {
+            const container = document.getElementById('reportResult');
+            container.innerHTML = '<div class="loading"><div class="spinner"></div>Загрузка...</div>';
+
+            const endpoints = {
+                'gender': '/analytics/gender-report',
+                'age': '/analytics/age-report',
+                'nationality': '/analytics/nationality-report',
+                'time': '/analytics/time-report?period=month',
+                'monthly': '/analytics/monthly-stats',
+                'yearly': '/analytics/yearly-stats',
+                'gender-age': '/analytics/gender-by-age',
+                'daily': '/analytics/daily-breakdown?days=30'
+            };
+
+            try {
+                const data = await fetch(withToken(endpoints[type])).then(r => r.json());
+                
+                let html = '<div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">';
+                html += '<h3 style="margin-bottom: 16px;">📊 ' + getReportTitle(type) + '</h3>';
+                html += renderStructuredReport(type, data);
+                html += '</div>';
+                
+                container.innerHTML = html;
+            } catch (err) {
+                container.innerHTML = '<div class="error">Ошибка загрузки отчета</div>';
+                showToast('Ошибка загрузки отчета: ' + err.message, 'error');
+            }
+        }
+
+        function getReportTitle(type) {
+            const titles = {
+                'gender': 'Отчет по полу',
+                'age': 'Отчет по возрасту',
+                'nationality': 'Отчет по гражданству',
+                'time': 'Поступления за период',
+                'monthly': 'По месяцам',
+                'yearly': 'По годам',
+                'gender-age': 'Пол по возрасту',
+                'daily': 'По дням'
+            };
+            return titles[type] || 'Отчет';
+        }
+
+        function renderStructuredReport(type, data) {
+            let html = '';
+            if (type === 'gender' && data.male !== undefined) {
+                html += '<table><thead><tr><th>Пол</th><th>Количество</th><th>Процент</th></tr></thead><tbody>';
+                html += `<tr><td>Мужчины</td><td>${data.male.count}</td><td>${data.male.percent}%</td></tr>`;
+                html += `<tr><td>Женщины</td><td>${data.female.count}</td><td>${data.female.percent}%</td></tr>`;
+                html += `<tr><td>Не определено</td><td>${data.unknown?.count || 0}</td><td>${data.unknown?.percent || 0}%</td></tr>`;
+                html += `<tr style="font-weight:bold"><td>Итого</td><td>${data.total}</td><td>100%</td></tr>`;
+                html += '</tbody></table>';
+                html += `<p style="margin-top:12px;color:#64748b">Больше: ${data.more === 'male' ? 'Мужчин' : data.more === 'female' ? 'Женщин' : 'Поровну'} (разница: ${data.difference})</p>`;
+            } else if (type === 'age' && data.groups) {
+                html += '<table><thead><tr><th>Возраст</th><th>Количество</th><th>Процент</th></tr></thead><tbody>';
+                for (const [group, count] of Object.entries(data.groups)) {
+                    const pct = data.percentages[group] || 0;
+                    html += `<tr><td>${group}</td><td>${count}</td><td>${pct}%</td></tr>`;
+                }
+                html += `<tr style="font-weight:bold"><td>Средний возраст</td><td colspan="2">${data.average_age?.toFixed(1) || 'N/A'} лет</td></tr>`;
+                html += '</tbody></table>';
+            } else if (type === 'nationality' && data.nationalities) {
+                html += '<table><thead><tr><th>Гражданство</th><th>Количество</th><th>Процент</th></tr></thead><tbody>';
+                for (const nat of data.nationalities) {
+                    html += `<tr><td>${escapeHtml(nat.name)}</td><td>${nat.count}</td><td>${nat.percent}%</td></tr>`;
+                }
+                html += '</tbody></table>';
+            } else if (type === 'monthly' && data.months) {
+                html += '<table><thead><tr><th>Месяц</th><th>Количество</th></tr></thead><tbody>';
+                for (const m of data.months) {
+                    if (m.count > 0) html += `<tr><td>${escapeHtml(m.month_name)}</td><td>${m.count}</td></tr>`;
+                }
+                html += `<tr style="font-weight:bold"><td>Итого за ${data.year}</td><td>${data.total}</td></tr>`;
+                html += '</tbody></table>';
+            } else if (type === 'daily' && data.data) {
+                html += '<table><thead><tr><th>Дата</th><th>Количество</th></tr></thead><tbody>';
+                for (const d of data.data) {
+                    html += `<tr><td>${escapeHtml(d.date)}</td><td>${d.count}</td></tr>`;
+                }
+                html += `<tr style="font-weight:bold"><td>Среднее/день</td><td>${data.average_per_day}</td></tr>`;
+                html += '</tbody></table>';
+            } else {
+                html += '<pre style="background:#0f172a;color:#e2e8f0;padding:16px;border-radius:8px;overflow-x:auto;font-size:13px;">';
+                html += escapeHtml(JSON.stringify(data, null, 2));
+                html += '</pre>';
+            }
+            return html;
+        }
+
+        // File upload
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) uploadPassport(file);
+        });
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) uploadPassport(file);
+        });
+
+        /* Toast notifications */
+        function showToast(message, type = 'info') {
+            const colors = { success: '#27ae60', error: '#e74c3c', warning: '#f39c12', info: '#667eea' };
+            const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+            const toast = document.createElement('div');
+            toast.style.cssText = `position:fixed;top:20px;right:20px;padding:14px 20px;background:${colors[type]};color:white;border-radius:8px;font-size:14px;z-index:10000;box-shadow:0 4px 20px rgba(0,0,0,0.2);max-width:400px;animation:slideIn 0.3s ease;`;
+            toast.innerHTML = `${icons[type]} ${escapeHtml(message)}`;
+            document.body.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 300); }, 4000);
+        }
+
+        // Add CSS animation
+        const style = document.createElement('style');
+        style.textContent = '@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}';
+        document.head.appendChild(style);
+
+        async function uploadPassport(file) {
+            if (currentUser.role !== 'admin') {
+                showToast('Только администраторы могут загружать паспорта', 'warning');
+                return;
+            }
+
+            document.getElementById('uploadProgress').style.display = 'block';
+            document.getElementById('progressBar').style.width = '0%';
+            document.getElementById('progressText').textContent = 'Загрузка...';
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                document.getElementById('progressBar').style.width = '50%';
+                document.getElementById('progressText').textContent = 'Файл загружается...';
+                
+                const response = await fetch(API_BASE + '/passport/scan', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(await readErrorMessage(response));
+                }
+
+                const result = await response.json();
+                document.getElementById('progressBar').style.width = '70%';
+
+                if (result.duplicate) {
+                    document.getElementById('progressBar').style.width = '100%';
+                    document.getElementById('progressText').textContent = 'Дубликат обнаружен';
+                    document.getElementById('uploadResult').innerHTML = `
+                        <div class="warning">
+                            ⚠️ Этот паспорт уже загружен ранее.<br>
+                            Task ID: ${escapeHtml(result.task_id)}<br>
+                            Загружено раз: ${result.duplicate_count}<br>
+                            Дата первой загрузки: ${escapeHtml(result.existing_record?.created_at || 'неизвестно')}
+                        </div>
+                    `;
+                    showToast(`Дубликат: паспорт уже загружен ${result.duplicate_count} раз`, 'warning');
+                    await loadStatistics();
+                    setTimeout(() => { document.getElementById('uploadProgress').style.display = 'none'; }, 2000);
+                    fileInput.value = '';
+                    return;
+                }
+
+                document.getElementById('progressText').textContent = 'OCR обрабатывает файл...';
+                
+                document.getElementById('uploadResult').innerHTML = `
+                    <div class="success">
+                        ✅ Файл загружен.<br>
+                        Task ID: ${escapeHtml(result.task_id)}<br>
+                        Статус: ${escapeHtml(result.status)}
+                    </div>
+                `;
+
+                const passportResult = await waitForPassportResult(result.task_id);
+                const recognized = hasRecognizedPassportData(passportResult);
+
+                document.getElementById('progressBar').style.width = '100%';
+                document.getElementById('progressText').textContent = recognized
+                    ? 'Распознавание завершено'
+                    : 'Файл обработан, но паспортные поля не найдены';
+
+                document.getElementById('uploadResult').innerHTML = recognized ? `
+                    <div class="success">
+                        ✅ Паспорт обработан.<br>
+                        Task ID: ${escapeHtml(result.task_id)}<br>
+                        Номер: ${escapeHtml(passportResult.passport_number || 'не найден')}<br>
+                        Владелец: ${escapeHtml(`${passportResult.last_name || ''} ${passportResult.first_name || ''}`.trim() || 'не определен')}
+                    </div>
+                ` : `
+                    <div class="warning">
+                        Файл обработан, но OCR не нашел паспортные поля.<br>
+                        Похоже, это не фото паспорта или качество изображения слишком низкое.<br>
+                        Task ID: ${escapeHtml(result.task_id)}
+                    </div>
+                `;
+
+                showToast(recognized ? 'Паспорт успешно распознан' : 'Паспорт не распознан', recognized ? 'success' : 'warning');
+                await loadStatistics();
+                
+                setTimeout(() => {
+                    document.getElementById('uploadProgress').style.display = 'none';
+                }, 2000);
+                fileInput.value = '';
+                
+            } catch (err) {
+                document.getElementById('uploadResult').innerHTML = `
+                    <div class="error">❌ Ошибка загрузки: ${escapeHtml(err.message || 'Неизвестная ошибка')}</div>
+                `;
+                showToast('Ошибка загрузки: ' + (err.message || 'Неизвестная ошибка'), 'error');
+            }
+        }
+
+        document.getElementById('ocrTestForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const file = document.getElementById('ocrTestFile').files[0];
+            if (!file) {
+                document.getElementById('ocrTestStatus').innerHTML = '<div class="error">Выберите изображение паспорта</div>';
+                return;
+            }
+
+            const submitButton = document.getElementById('ocrTestSubmit');
+            const formData = new FormData();
+            formData.append('file', file);
+            // copy_file — optional, не требуется
+            formData.append('copy_file', new Blob(), '');
+
+            submitButton.disabled = true;
+            submitButton.textContent = '⏳ Отправка...';
+            document.getElementById('ocrTestStatus').innerHTML = '<div class="success">⏳ Отправка файла на распознавание...</div>';
+            document.getElementById('ocrTestResult').innerHTML = '';
+
+            try {
+                // Шаг 1: Отправляем на /scan (асинхронно)
+                const scanResponse = await fetch(API_BASE + '/passport/scan', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    body: formData,
+                });
+
+                if (!scanResponse.ok) {
+                    throw new Error(await readErrorMessage(scanResponse));
+                }
+
+                const scanData = await scanResponse.json();
+                const taskId = scanData.task_id;
+
+                // Шаг 2: Polling статуса
+                let attempts = 0;
+                const maxAttempts = 120; // 4 минуты при интервале 2 сек
+                let completed = false;
+
+                submitButton.textContent = '⏳ Распознаём...';
+                document.getElementById('ocrTestStatus').innerHTML = '<div class="success">⏳ OCR-анализ через VLM, ожидание результата...</div>';
+
+                while (attempts < maxAttempts) {
+                    await new Promise(r => setTimeout(r, 2000));
+                    attempts++;
+
+                    const statusResp = await fetch(API_BASE + '/passport/status/' + taskId, {
+                        headers: { 'Authorization': 'Bearer ' + token },
+                    });
+
+                    if (statusResp.ok) {
+                        const statusData = await statusResp.json();
+                        if (statusData.status === 'completed') {
+                            completed = true;
+                            break;
+                        }
+                        submitButton.textContent = `⏳ Распознаём... (${attempts * 2}с)`;
+                    }
+                }
+
+                if (!completed) {
+                    throw new Error('Таймаут: обработка не завершена за 4 минуты');
+                }
+
+                // Шаг 3: Получаем результат
+                const resultResp = await fetch(API_BASE + '/passport/result/' + taskId, {
+                    headers: { 'Authorization': 'Bearer ' + token },
+                });
+
+                if (!resultResp.ok) {
+                    throw new Error('Ошибка получения результата');
+                }
+
+                const result = await resultResp.json();
+
+                // Преобразуем в формат для рендера
+                const ocrResult = {
+                    filename: file.name,
+                    image: { width: 0, height: 0 },
+                    doc_detected: true,
+                    ocr_confidence: result.confidence || 0,
+                    overall_confidence: result.confidence || 0,
+                    mrz_valid: result.mrz_valid || false,
+                    mrz_lines: [],
+                    mrz_data: {},
+                    extracted_fields: {
+                        first_name: result.first_name || '',
+                        last_name: result.last_name || '',
+                        middle_name: result.middle_name || '',
+                        birth_date: result.birth_date || '',
+                        gender: result.gender || '',
+                        nationality: result.nationality || '',
+                        passport_number: result.passport_number || '',
+                        passport_series: result.passport_series || '',
+                        issue_date: result.issue_date || '',
+                        expiry_date: result.expiry_date || '',
+                        issued_by: result.issued_by || '',
+                        pinfl: result.pinfl || '',
+                    },
+                    validation: {
+                        overall_confidence: result.confidence || 0,
+                        all_valid: true,
+                        checks: []
+                    },
+                    raw_text: ''
+                };
+
+                document.getElementById('ocrTestStatus').innerHTML = `<div class="success">✅ OCR тест завершён за ${attempts * 2}с. Результаты ниже.</div>`;
+                renderOcrTestResult(ocrResult);
+
+            } catch (err) {
+                document.getElementById('ocrTestStatus').innerHTML = `<div class="error">❌ ${escapeHtml(err.message || 'Ошибка OCR теста')}</div>`;
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Запустить OCR тест';
+            }
+        });
+
+        // Loading
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        // ========== INCOMING PASSPORTS ==========
+        let incomingAllData = [];
+        let incomingCurrentPage = 1;
+        const INCOMING_PAGE_SIZE = 50;
+
+        async function loadIncomingPassports(page = 1) {
+            incomingCurrentPage = page;
+            showLoading(true);
+            try {
+                const natFilter = document.getElementById('incomingNatFilter').value;
+                let url = API_BASE + '/passport/list?page=' + page + '&limit=' + INCOMING_PAGE_SIZE;
+                if (natFilter) url += '&nationality=' + encodeURIComponent(natFilter);
+
+                const response = await fetch(url, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!response.ok) throw new Error('Ошибка загрузки данных');
+                const data = await response.json();
+                incomingAllData = data.data || [];
+                document.getElementById('incomingTotal').textContent = data.total || 0;
+                renderIncomingTable();
+                renderIncomingPagination(data.total, page);
+            } catch (err) {
+                document.getElementById('incomingTableBody').innerHTML =
+                    '<tr><td colspan="13" style="text-align:center;padding:40px;color:#e74c3c;">' + escapeHtml(err.message) + '</td></tr>';
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function renderIncomingTable() {
+            const search = (document.getElementById('incomingSearch').value || '').toLowerCase();
+            const filtered = incomingAllData.filter(r => {
+                if (!search) return true;
+                const haystack = [
+                    r.last_name, r.first_name, r.middle_name,
+                    r.pinfl, r.passport_number, r.birth_date
+                ].join(' ').toLowerCase();
+                return haystack.includes(search);
+            });
+
+            document.getElementById('incomingShown').textContent = filtered.length;
+
+            if (filtered.length === 0) {
+                document.getElementById('incomingTableBody').innerHTML =
+                    '<tr><td colspan="13" style="text-align:center;padding:40px;color:#888;">Нет данных</td></tr>';
+                return;
+            }
+
+            document.getElementById('incomingTableBody').innerHTML = filtered.map((r, i) => {
+                const confClass = r.confidence >= 0.8 ? 'color:#27ae60' : r.confidence >= 0.5 ? 'color:#f39c12' : 'color:#e74c3c';
+                const genderIcon = r.gender === 'M' ? '♂️' : r.gender === 'F' ? '♀️' : '—';
+                return `<tr style="border-bottom: 1px solid #f0f0f0; ${i % 2 ? 'background:#fafbff;' : ''}">
+                    <td style="padding:8px;color:#999;">${i + 1}</td>
+                    <td style="padding:8px;font-weight:600;">${escapeHtml(r.last_name || '—')}</td>
+                    <td style="padding:8px;">${escapeHtml(r.first_name || '—')}</td>
+                    <td style="padding:8px;color:#666;">${escapeHtml(r.middle_name || '—')}</td>
+                    <td style="padding:8px;white-space:nowrap;">${escapeHtml(r.birth_date || '—')}</td>
+                    <td style="padding:8px;text-align:center;">${genderIcon}</td>
+                    <td style="padding:8px;">${escapeHtml(r.nationality || '—')}</td>
+                    <td style="padding:8px;font-family:monospace;font-weight:600;">${escapeHtml(r.passport_number || '—')}</td>
+                    <td style="padding:8px;font-family:monospace;font-size:11px;">${escapeHtml(r.pinfl || '—')}</td>
+                    <td style="padding:8px;white-space:nowrap;">${escapeHtml(r.issue_date || '—')}</td>
+                    <td style="padding:8px;white-space:nowrap;">${escapeHtml(r.expiry_date || '—')}</td>
+                    <td style="padding:8px;text-align:center;${confClass};font-weight:700;">${r.confidence ? (r.confidence * 100).toFixed(0) + '%' : '—'}</td>
+                    <td style="padding:8px;white-space:nowrap;font-size:11px;color:#888;">${formatDate(r.created_at)}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function filterIncomingPassports() {
+            renderIncomingTable();
+        }
+
+        function renderIncomingPagination(total, currentPage) {
+            const totalPages = Math.ceil(total / INCOMING_PAGE_SIZE);
+            if (totalPages <= 1) {
+                document.getElementById('incomingPagination').innerHTML = '';
+                return;
+            }
+            let html = '';
+            if (currentPage > 1) html += `<button class="btn btn-small" onclick="loadIncomingPassports(${currentPage - 1})">← Назад</button>`;
+            const start = Math.max(1, currentPage - 2);
+            const end = Math.min(totalPages, currentPage + 2);
+            if (start > 1) html += `<button class="btn btn-small" onclick="loadIncomingPassports(1)" style="background:#eee;color:#333;">1</button>`;
+            if (start > 2) html += '<span style="padding:8px;color:#888;">...</span>';
+            for (let p = start; p <= end; p++) {
+                const active = p === currentPage ? 'background:linear-gradient(135deg,#667eea,#764ba2);color:white;' : '';
+                html += `<button class="btn btn-small" onclick="loadIncomingPassports(${p})" style="${active || ''}padding:8px 14px;">${p}</button>`;
+            }
+            if (end < totalPages - 1) html += '<span style="padding:8px;color:#888;">...</span>';
+            if (end < totalPages) html += `<button class="btn btn-small" onclick="loadIncomingPassports(${totalPages})" style="background:#eee;color:#333;">${totalPages}</button>`;
+            if (currentPage < totalPages) html += `<button class="btn btn-small" onclick="loadIncomingPassports(${currentPage + 1})">Вперёд →</button>`;
+            document.getElementById('incomingPagination').innerHTML = html;
+        }
+
+        function formatDate(isoStr) {
+            if (!isoStr) return '—';
+            try {
+                const d = new Date(isoStr);
+                return d.toLocaleDateString('ru-RU', { day:'2-digit', month:'2-digit', year:'numeric' });
+            } catch { return isoStr; }
+        }
+    </script>
+</body>
+</html>

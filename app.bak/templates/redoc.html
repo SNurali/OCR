@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="__HTML_LANG__" data-theme="dark">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>__PAGE_TITLE__</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%234F8CFF'/><text x='50' y='70' text-anchor='middle' font-size='50' fill='white' font-family='system-ui'>⚡</text></svg>">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #0B0F14; --bg-surface: #111820; --bg-elevated: #161D27;
+      --bg-overlay: rgba(11,15,20,0.92);
+      --border-subtle: rgba(255,255,255,0.06); --border-default: rgba(255,255,255,0.1); --border-strong: rgba(255,255,255,0.15);
+      --text-primary: #F2F5F8; --text-secondary: #94A3B8; --text-tertiary: #64748B;
+      --accent-primary: #4F8CFF; --accent-primary-hover: #3B7BEE; --accent-glow: rgba(79,140,255,0.15);
+      --accent-gradient: linear-gradient(135deg, #4F8CFF 0%, #7C5CFC 50%, #A855F7 100%);
+      --accent-gradient-text: linear-gradient(135deg, #60A5FA 0%, #A78BFA 100%);
+      --status-success: #34D399; --status-success-bg: rgba(52,211,153,0.1);
+      --status-error: #F87171; --status-error-bg: rgba(248,113,113,0.1);
+      --method-get: #60A5FA; --method-get-bg: rgba(96,165,250,0.1);
+      --method-post: #34D399; --method-post-bg: rgba(52,211,153,0.1);
+      --method-put: #FBBF24; --method-put-bg: rgba(251,191,36,0.1);
+      --method-delete: #F87171; --method-delete-bg: rgba(248,113,113,0.1);
+      --method-patch: #C084FC; --method-patch-bg: rgba(192,132,252,0.1);
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+      --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px; --radius-xl: 20px;
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: var(--font-sans); background: var(--bg-base); color: var(--text-primary); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+    a { color: var(--accent-primary); text-decoration: none; transition: color 150ms var(--ease-out); }
+    a:hover { color: var(--accent-primary-hover); }
+    code { font-family: var(--font-mono); font-size: 0.875em; }
+    button { font-family: inherit; cursor: pointer; }
+    input { font-family: inherit; }
+
+    /* ===== AUTH GATE ===== */
+    .auth-gate {
+      position: fixed; inset: 0; z-index: 9999;
+      background: var(--bg-base);
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    .auth-gate.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+    .auth-gate::before {
+      content: ''; position: absolute; inset: 0;
+      background-image:
+        radial-gradient(circle at 20% 50%, rgba(79,140,255,0.06) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(124,92,252,0.06) 0%, transparent 50%),
+        radial-gradient(circle at 50% 80%, rgba(168,85,247,0.04) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    .auth-card {
+      position: relative; z-index: 1;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 40px 32px;
+      width: 100%; max-width: 400px;
+      box-shadow: 0 24px 48px rgba(0,0,0,0.4), 0 0 60px rgba(79,140,255,0.04);
+      animation: modalIn 0.3s var(--ease-out);
+    }
+    @keyframes modalIn { from { opacity: 0; transform: scale(0.96) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+    .auth-logo-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 32px; }
+    .auth-logo-icon {
+      width: 40px; height: 40px; background: var(--accent-gradient);
+      border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      font-size: 20px; color: white; box-shadow: 0 4px 16px rgba(79,140,255,0.3);
+    }
+    .auth-logo-text { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
+    .auth-logo-text span { background: var(--accent-gradient-text); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .auth-card h1 { font-size: 20px; font-weight: 700; text-align: center; margin-bottom: 6px; letter-spacing: -0.02em; }
+    .auth-subtitle { font-size: 13px; color: var(--text-tertiary); text-align: center; margin-bottom: 28px; }
+    .auth-form-group { margin-bottom: 16px; }
+    .auth-label { display: block; font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; }
+    .auth-input {
+      width: 100%; padding: 10px 14px; background: var(--bg-base);
+      border: 1px solid var(--border-default); border-radius: 10px;
+      color: var(--text-primary); font-size: 14px; outline: none; transition: all 150ms ease;
+    }
+    .auth-input:focus { border-color: var(--accent-primary); box-shadow: 0 0 0 3px var(--accent-glow); }
+    .auth-input::placeholder { color: var(--text-tertiary); }
+    .auth-error { display: none; font-size: 12px; color: var(--status-error); margin-top: 10px; padding: 8px 12px; background: var(--status-error-bg); border-radius: 8px; text-align: center; }
+    .auth-error.visible { display: block; }
+    .auth-btn {
+      width: 100%; padding: 11px; margin-top: 4px; border: none; border-radius: 10px;
+      background: var(--accent-primary); color: white; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: all 150ms ease;
+    }
+    .auth-btn:hover { background: var(--accent-primary-hover); box-shadow: 0 0 24px var(--accent-glow); }
+    .auth-btn:active { transform: scale(0.98); }
+    .auth-lang-row { display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 24px; padding: 3px; background: var(--bg-base); border-radius: 8px; border: 1px solid var(--border-subtle); width: fit-content; margin-left: auto; margin-right: auto; }
+    .auth-lang-link { color: var(--text-tertiary); text-decoration: none; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 500; transition: all 150ms ease; }
+    .auth-lang-link:hover { color: var(--text-secondary); }
+    .auth-footer { text-align: center; margin-top: 24px; font-size: 11px; color: var(--text-tertiary); }
+
+    /* ===== APP LAYOUT (hidden until auth) ===== */
+    .app-layout { display: none; grid-template-columns: 260px 1fr 380px; grid-template-rows: 56px 1fr; min-height: 100vh; }
+    .app-layout.visible { display: grid; }
+
+    /* ===== TOP BAR ===== */
+    .topbar { grid-column: 1/-1; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; height: 56px; background: var(--bg-overlay); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid var(--border-subtle); position: sticky; top: 0; z-index: 100; }
+    .topbar-brand { display: flex; align-items: center; gap: 10px; }
+    .topbar-logo { width: 28px; height: 28px; background: var(--accent-gradient); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 14px; color: white; font-weight: 700; }
+    .topbar-title { font-size: 14px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.01em; }
+    .topbar-title span { background: var(--accent-gradient-text); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .topbar-version { font-size: 11px; color: var(--text-tertiary); background: var(--bg-elevated); padding: 2px 8px; border-radius: 99px; border: 1px solid var(--border-subtle); margin-left: 8px; }
+    .topbar-actions { display: flex; align-items: center; gap: 6px; }
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: none; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500; transition: all 150ms var(--ease-out); white-space: nowrap; }
+    .btn-primary { background: var(--accent-primary); color: white; }
+    .btn-primary:hover { background: var(--accent-primary-hover); box-shadow: 0 0 20px var(--accent-glow); }
+    .btn-danger { background: var(--status-error-bg); color: var(--status-error); border: 1px solid rgba(248,113,113,0.15); }
+    .btn-danger:hover { background: rgba(248,113,113,0.15); }
+    .auth-badge { display: none; align-items: center; gap: 6px; padding: 4px 10px; background: var(--status-success-bg); border: 1px solid rgba(52,211,153,0.15); border-radius: 99px; font-size: 11px; color: var(--status-success); font-weight: 500; }
+    .auth-badge.visible { display: flex; }
+    .auth-badge-dot { width: 5px; height: 5px; background: var(--status-success); border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .lang-switcher { display: flex; align-items: center; gap: 2px; padding: 2px; background: var(--bg-surface); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); }
+    .lang-link { color: var(--text-tertiary); text-decoration: none; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; transition: all 150ms var(--ease-out); }
+    .lang-link:hover { color: var(--text-secondary); }
+    .lang-link.active { color: var(--text-primary); background: var(--bg-elevated); }
+
+    /* ===== SIDEBAR ===== */
+    .sidebar { position: sticky; top: 56px; height: calc(100vh - 56px); overflow-y: auto; padding: 16px 0; border-right: 1px solid var(--border-subtle); background: var(--bg-surface); }
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 2px; }
+    .sidebar-section { margin-bottom: 24px; }
+    .sidebar-section-title { display: flex; align-items: center; gap: 8px; padding: 0 24px; margin-bottom: 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-tertiary); }
+    .sidebar-section-icon { width: 14px; height: 14px; opacity: 0.6; }
+    .sidebar-link { display: flex; align-items: center; gap: 8px; padding: 6px 24px; font-size: 13px; color: var(--text-secondary); text-decoration: none; transition: all 150ms var(--ease-out); border-left: 2px solid transparent; }
+    .sidebar-link:hover { color: var(--text-primary); background: rgba(255,255,255,0.02); }
+    .sidebar-link.active { color: var(--accent-primary); background: var(--accent-glow); border-left-color: var(--accent-primary); }
+    .sidebar-method { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px; font-family: var(--font-mono); letter-spacing: 0.02em; }
+    .sidebar-method.get { background: var(--method-get-bg); color: var(--method-get); }
+    .sidebar-method.post { background: var(--method-post-bg); color: var(--method-post); }
+    .sidebar-method.put { background: var(--method-put-bg); color: var(--method-put); }
+    .sidebar-method.delete { background: var(--method-delete-bg); color: var(--method-delete); }
+    .sidebar-method.patch { background: var(--method-patch-bg); color: var(--method-patch); }
+
+    /* ===== MAIN ===== */
+    .main-content { padding: 48px 32px; max-width: 800px; margin: 0 auto; width: 100%; }
+    .content-hero { margin-bottom: 64px; }
+    .content-hero h1 { font-size: 36px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 16px; }
+    .content-hero h1 span { background: var(--accent-gradient-text); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .content-hero p { font-size: 16px; color: var(--text-secondary); line-height: 1.7; max-width: 600px; }
+
+    /* ===== RIGHT PANEL ===== */
+    .right-panel { position: sticky; top: 56px; height: calc(100vh - 56px); overflow-y: auto; padding: 24px; border-left: 1px solid var(--border-subtle); background: var(--bg-surface); }
+    .right-panel::-webkit-scrollbar { width: 4px; }
+    .right-panel::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 2px; }
+    .panel-section { margin-bottom: 32px; }
+    .panel-title { font-size: 12px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 16px; }
+    .panel-tabs { display: flex; gap: 2px; padding: 2px; background: var(--bg-base); border-radius: var(--radius-sm); margin-bottom: 16px; }
+    .panel-tab { flex: 1; padding: 5px 8px; text-align: center; font-size: 11px; font-weight: 500; color: var(--text-tertiary); background: transparent; border: none; border-radius: 4px; transition: all 150ms var(--ease-out); }
+    .panel-tab:hover { color: var(--text-secondary); }
+    .panel-tab.active { color: var(--text-primary); background: var(--bg-elevated); }
+    .quick-start { background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 16px; margin-bottom: 24px; }
+    .quick-start-title { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+    .quick-start-desc { font-size: 12px; color: var(--text-tertiary); margin-bottom: 16px; line-height: 1.5; }
+    .code-block { position: relative; background: var(--bg-base); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); overflow: hidden; margin-bottom: 16px; }
+    .code-header { display: flex; align-items: center; justify-content: space-between; padding: 6px 16px; background: var(--bg-elevated); border-bottom: 1px solid var(--border-subtle); }
+    .code-lang { font-size: 11px; font-weight: 500; color: var(--text-tertiary); font-family: var(--font-mono); }
+    .code-copy { display: flex; align-items: center; gap: 4px; padding: 3px 8px; background: transparent; border: 1px solid var(--border-subtle); border-radius: 4px; color: var(--text-tertiary); font-size: 11px; transition: all 150ms var(--ease-out); }
+    .code-copy:hover { background: var(--bg-surface); color: var(--text-secondary); }
+    .code-copy.copied { color: var(--status-success); border-color: rgba(52,211,153,0.2); }
+    .code-content { padding: 16px; overflow-x: auto; }
+    .code-content pre { margin: 0; font-family: var(--font-mono); font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
+    .code-content .key { color: #7DD3FC; }
+    .code-content .string { color: #86EFAC; }
+    .code-content .number { color: #FBBF24; }
+    .code-content .boolean { color: #C084FC; }
+    .code-content .comment { color: var(--text-tertiary); font-style: italic; }
+    .status-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 99px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+    .status-badge.success { background: var(--status-success-bg); color: var(--status-success); }
+    .field-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: var(--bg-elevated); border-radius: var(--radius-sm); font-size: 12px; margin-bottom: 6px; }
+    .field-row span:first-child { color: var(--text-secondary); }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 1200px) { .app-layout { grid-template-columns: 240px 1fr; } .right-panel { display: none; } }
+    @media (max-width: 768px) { .app-layout { grid-template-columns: 1fr; } .sidebar { display: none; } .main-content { padding: 24px; } .content-hero h1 { font-size: 28px; } }
+    redoc { display: block; }
+    /* Hide ReDoc's built-in sidebar — we use our custom one */
+    redoc .menu-content, redoc .redoc-wrap .menu-content, redoc > div > div:first-child { display: none !important; }
+    redoc .api-content-wrapper { margin-left: 0 !important; }
+  </style>
+</head>
+<body>
+  <!-- AUTH GATE: shown until token is verified -->
+  <div class="auth-gate" id="authGate">
+    <div class="auth-card">
+      <div class="auth-logo-row">
+        <div class="auth-logo-icon">⚡</div>
+        <div class="auth-logo-text"><span>OCRUZ</span> Passport API</div>
+      </div>
+      <h1>__LOGIN_TITLE__</h1>
+      <p class="auth-subtitle">__LOGIN_SUBTITLE__</p>
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="auth-form-group">
+          <label class="auth-label">__USERNAME_PH__</label>
+          <input class="auth-input" type="text" id="username" placeholder="__USERNAME_PH__" autocomplete="username" required>
+        </div>
+        <div class="auth-form-group">
+          <label class="auth-label">__PASSWORD_PH__</label>
+          <input class="auth-input" type="password" id="password" placeholder="__PASSWORD_PH__" autocomplete="current-password" required>
+        </div>
+        <div class="auth-error" id="loginError">__LOGIN_ERROR__</div>
+        <button class="auth-btn" type="submit">__LOGIN_BTN__</button>
+      </form>
+      <div class="auth-lang-row">__LANG_LINKS__</div>
+      <div class="auth-footer">__FOOTER__</div>
+    </div>
+  </div>
+
+  <!-- APP LAYOUT: hidden until auth -->
+  <div class="app-layout" id="appLayout">
+    <header class="topbar">
+      <div class="topbar-brand">
+        <div class="topbar-logo">⚡</div>
+        <div class="topbar-title"><span>OCRUZ</span> Passport API</div>
+        <span class="topbar-version">v2.0</span>
+      </div>
+      <div class="topbar-actions">
+        <div class="auth-badge" id="authStatus"><div class="auth-badge-dot"></div><span id="authUsername"></span></div>
+        <button class="btn btn-primary" id="loginBtn" onclick="showLogin()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+          __LOGIN_BTN__
+        </button>
+        <button class="btn btn-danger" id="logoutBtn" onclick="logout()" style="display:none">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          __LOGOUT_BTN__
+        </button>
+        <div class="lang-switcher">__LANG_LINKS__</div>
+      </div>
+    </header>
+
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-section-title"><svg class="sidebar-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>__SIDEBAR_GETTING_STARTED__</div>
+        <a href="#" class="sidebar-link active" data-section="intro">__SIDEBAR_INTRODUCTION__</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-title"><svg class="sidebar-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>__SIDEBAR_PASSPORT_OCR__</div>
+        <a href="#" class="sidebar-link" data-tag="passport" data-op="PostApiPassportScan"><span class="sidebar-method post">POST</span> /scan</a>
+        <a href="#" class="sidebar-link" data-tag="passport" data-op="PostApiPassportTestOcr"><span class="sidebar-method post">POST</span> /test-ocr</a>
+        <a href="#" class="sidebar-link" data-tag="passport" data-op="GetApiPassportStatus"><span class="sidebar-method get">GET</span> /status/{id}</a>
+        <a href="#" class="sidebar-link" data-tag="passport" data-op="GetApiPassportResult"><span class="sidebar-method get">GET</span> /result/{id}</a>
+        <a href="#" class="sidebar-link" data-tag="passport" data-op="GetApiPassportList"><span class="sidebar-method get">GET</span> /list</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-title"><svg class="sidebar-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>__SIDEBAR_ANALYTICS__</div>
+        <a href="#" class="sidebar-link" data-tag="analytics" data-op="GetApiAnalyticsSummary"><span class="sidebar-method get">GET</span> /summary</a>
+        <a href="#" class="sidebar-link" data-tag="analytics" data-op="GetApiAnalyticsGenderReport"><span class="sidebar-method get">GET</span> /gender-report</a>
+        <a href="#" class="sidebar-link" data-tag="analytics" data-op="GetApiAnalyticsAgeReport"><span class="sidebar-method get">GET</span> /age-report</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-title"><svg class="sidebar-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>__SIDEBAR_ADMIN__</div>
+        <a href="#" class="sidebar-link" data-tag="admin" data-op="GetApiAdminUsers"><span class="sidebar-method get">GET</span> /users</a>
+        <a href="#" class="sidebar-link" data-tag="admin" data-op="PostApiAdminUsers"><span class="sidebar-method post">POST</span> /users</a>
+        <a href="#" class="sidebar-link" data-tag="admin" data-op="PutApiAdminUsers"><span class="sidebar-method put">PUT</span> /users/{id}</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-title"><svg class="sidebar-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>__SIDEBAR_AUTH__</div>
+        <a href="#" class="sidebar-link" data-tag="auth" data-op="PostApiAuthLogin"><span class="sidebar-method post">POST</span> /login</a>
+      </div>
+    </nav>
+
+    <main class="main-content" id="main-content">
+      <div class="content-hero" id="contentHero">
+        <h1>__HERO_TITLE_1__<span>__HERO_TITLE_2__</span></h1>
+        <p>__HERO_DESC__</p>
+      </div>
+      <div id="redoc-mount"></div>
+    </main>
+
+    <aside class="right-panel" id="rightPanel">
+      <div class="panel-section">
+        <div class="panel-title">__PANEL_QUICK_START__</div>
+        <div class="quick-start">
+          <div class="quick-start-title">__PANEL_GET_TOKEN__</div>
+          <div class="quick-start-desc">__PANEL_GET_TOKEN_DESC__</div>
+          <button class="btn btn-primary" onclick="showLogin()" style="width:100%">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+            __LOGIN_BTN__
+          </button>
+        </div>
+      </div>
+      <div class="panel-section">
+        <div class="panel-title">__PANEL_EXAMPLE_REQUEST__</div>
+        <div class="panel-tabs">
+          <button class="panel-tab active" onclick="switchTab(this, 'curl')">__TAB_CURL__</button>
+          <button class="panel-tab" onclick="switchTab(this, 'python')">__TAB_PYTHON__</button>
+          <button class="panel-tab" onclick="switchTab(this, 'js')">__TAB_JS__</button>
+        </div>
+        <div class="code-block" id="example-code">
+          <div class="code-header"><span class="code-lang">__CODE_LANG_BASH__</span><button class="code-copy" onclick="copyCode(this)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button></div>
+          <div class="code-content">
+            <pre id="code-curl"><span class="comment">__CODE_COMMENT_GET_TOKEN__</span>
+TOKEN=$(curl -sS -X POST http://localhost:8001/api/auth/login \
+  -H <span class="string">"Content-Type: application/x-www-form-urlencoded"</span> \
+  --data <span class="string">"username=admin&password=..."</span>)
+
+<span class="comment">__CODE_COMMENT_TEST_OCR__</span>
+curl -X POST http://localhost:8001/api/passport/test-ocr \
+  -H <span class="string">"Authorization: Bearer $TOKEN"</span> \
+  -F <span class="string">'file=@passport.jpg'</span></pre>
+            <pre id="code-python" style="display:none"><span class="key">import</span> requests
+
+<span class="comment">__CODE_COMMENT_GET_TOKEN__</span>
+resp = requests.post(<span class="string">"http://localhost:8001/api/auth/login"</span>,
+  data={<span class="string">"username"</span>: <span class="string">"admin"</span>, <span class="string">"password"</span>: <span class="string">"..."</span>})
+token = resp.json()[<span class="string">"access_token"</span>]
+
+<span class="comment">__CODE_COMMENT_TEST_OCR__</span>
+resp = requests.post(<span class="string">"http://localhost:8001/api/passport/test-ocr"</span>,
+  headers={<span class="string">"Authorization"</span>: <span class="string">f"Bearer {token}"</span>},
+  files={<span class="string">"file"</span>: open(<span class="string">"passport.jpg"</span>, <span class="string">"rb"</span>)})</pre>
+            <pre id="code-js" style="display:none"><span class="key">const</span> formData = <span class="key">new</span> FormData();
+formData.append(<span class="string">'file'</span>, fileInput.files[<span class="number">0</span>]);
+
+<span class="key">const</span> resp = <span class="key">await</span> fetch(<span class="string">'/api/passport/test-ocr'</span>, {
+  method: <span class="string">'POST'</span>,
+  headers: { <span class="string">'Authorization'</span>: <span class="string">`Bearer ${token}`</span> },
+  body: formData
+});
+
+<span class="key">const</span> data = <span class="key">await</span> resp.json();
+console.log(data.extracted_fields);</pre>
+          </div>
+        </div>
+      </div>
+      <div class="panel-section">
+        <div class="panel-title">__PANEL_RESPONSE_EXAMPLE__</div>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">json</span><span class="status-badge success">200 OK</span></div>
+          <div class="code-content">
+            <pre>{
+  <span class="key">"first_name"</span>: <span class="string">"JASUR"</span>,
+  <span class="key">"last_name"</span>: <span class="string">"KARIMOV"</span>,
+  <span class="key">"birth_date"</span>: <span class="string">"12.03.1990"</span>,
+  <span class="key">"passport_number"</span>: <span class="string">"AA7745210"</span>,
+  <span class="key">"pinfl"</span>: <span class="string">"38506129470015"</span>,
+  <span class="key">"ocr_confidence"</span>: <span class="number">0.95</span>
+}</pre>
+          </div>
+        </div>
+      </div>
+      <div class="panel-section">
+        <div class="panel-title">__PANEL_EXTRACTED_FIELDS__</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div class="field-row"><span>__FIELD_SURNAME__</span><span class="status-badge success">✓</span></div>
+          <div class="field-row"><span>__FIELD_FIRST_NAME__</span><span class="status-badge success">✓</span></div>
+          <div class="field-row"><span>__FIELD_PATRONYMIC__</span><span class="status-badge success">✓</span></div>
+          <div class="field-row"><span>__FIELD_BIRTH_DATE__</span><span class="status-badge success">✓</span></div>
+          <div class="field-row"><span>__FIELD_GENDER__</span><span class="status-badge success">✓</span></div>
+          <div class="field-row"><span>__FIELD_PASSPORT_NUMBER__</span><span class="status-badge success">✓</span></div>
+          <div class="field-row"><span>__FIELD_PINFL__</span><span class="status-badge success">✓</span></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- REDOC (rendered inside main content) -->
+  <script src="https://cdn.jsdelivr.net/npm/redoc@2/bundles/redoc.standalone.js"></script>
+
+  <script>
+    const API_BASE = window.location.origin;
+    let authToken = localStorage.getItem('ocr_api_token') || '';
+    let currentUser = localStorage.getItem('ocr_api_user') || '';
+    const LANG_NAMES = { curl: '__CODE_LANG_BASH__', python: '__CODE_LANG_PYTHON__', js: '__CODE_LANG_JS__' };
+
+    // Intercept fetch for auth
+    const originalFetch = window.fetch;
+    window.fetch = async function(...args) {
+      let [resource, config] = args;
+      if (!config) config = {};
+      if (!config.headers) config.headers = {};
+      if (authToken && typeof resource === 'string' && resource.startsWith('/api/')) {
+        if (config.headers instanceof Headers) {
+          config.headers.set('Authorization', 'Bearer ' + authToken);
+        } else {
+          config.headers['Authorization'] = 'Bearer ' + authToken;
+        }
+      }
+      return originalFetch.apply(this, args);
+    };
+
+    function checkAuth() {
+      if (authToken) {
+        document.getElementById('authGate').classList.add('hidden');
+        document.getElementById('appLayout').classList.add('visible');
+        document.getElementById('authStatus').classList.add('visible');
+        document.getElementById('authUsername').textContent = currentUser;
+        document.getElementById('loginBtn').style.display = 'none';
+        document.getElementById('logoutBtn').style.display = 'inline-flex';
+        initRedoc();
+      } else {
+        document.getElementById('authGate').classList.remove('hidden');
+        document.getElementById('appLayout').classList.remove('visible');
+        document.getElementById('authStatus').classList.remove('visible');
+        document.getElementById('loginBtn').style.display = 'inline-flex';
+        document.getElementById('logoutBtn').style.display = 'none';
+      }
+    }
+
+    function showLogin() {
+      document.getElementById('authGate').classList.remove('hidden');
+      document.getElementById('appLayout').classList.remove('visible');
+      document.getElementById('username').focus();
+    }
+
+    function hideLogin() {
+      document.getElementById('loginError').classList.remove('visible');
+      document.getElementById('loginForm').reset();
+      checkAuth();
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const errorEl = document.getElementById('loginError');
+      try {
+        const params = new URLSearchParams();
+        params.append('username', username);
+        params.append('password', password);
+        const resp = await fetch(API_BASE + '/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: params.toString()
+        });
+        if (!resp.ok) { errorEl.classList.add('visible'); return; }
+        const data = await resp.json();
+        authToken = data.access_token;
+        currentUser = username;
+        localStorage.setItem('ocr_api_token', authToken);
+        localStorage.setItem('ocr_api_user', currentUser);
+        hideLogin();
+      } catch (err) { errorEl.classList.add('visible'); }
+    }
+
+    function logout() {
+      authToken = ''; currentUser = '';
+      localStorage.removeItem('ocr_api_token');
+      localStorage.removeItem('ocr_api_user');
+      checkAuth();
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') { hideLogin(); }
+    });
+
+    // Code tab switching
+    function switchTab(btn, lang) {
+      document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('[id^="code-"]').forEach(c => c.style.display = 'none');
+      const el = document.getElementById('code-' + lang);
+      if (el) el.style.display = 'block';
+      document.querySelector('.code-lang').textContent = LANG_NAMES[lang] || lang;
+    }
+
+    // Copy code
+    function copyCode(btn) {
+      const pre = btn.closest('.code-block').querySelector('pre:not([style*="display: none"])');
+      if (!pre) return;
+      navigator.clipboard.writeText(pre.textContent).then(() => {
+        btn.classList.add('copied');
+        btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy';
+        }, 2000);
+      });
+    }
+
+    // Sidebar navigation — click handlers for ReDoc endpoints
+    document.querySelectorAll('.sidebar-link[data-tag]').forEach(link => {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        const tag = this.getAttribute('data-tag');
+        const op = this.getAttribute('data-op');
+        const anchor = 'tag/' + tag + '/operation/' + op;
+        // ReDoc creates elements with these IDs
+        const target = document.getElementById(anchor);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        // Update active state
+        sidebarLinks.forEach(l => l.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+
+    // "Introduction" link scrolls to top
+    document.querySelectorAll('.sidebar-link[data-section="intro"]').forEach(link => {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        document.getElementById('main-content').scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        sidebarLinks.forEach(l => l.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+
+    // Sidebar active link tracking via scroll spy on ReDoc content
+    const scrollSpy = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const id = entry.target.id;
+          if (!id) return;
+          // Find matching sidebar link
+          const parts = id.split('/');
+          if (parts.length >= 4 && parts[0] === 'tag') {
+            const tag = parts[1];
+            const op = parts[3];
+            const match = document.querySelector(`.sidebar-link[data-tag="${tag}"][data-op="${op}"]`);
+            if (match) {
+              sidebarLinks.forEach(l => l.classList.remove('active'));
+              match.classList.add('active');
+            }
+          }
+        }
+      });
+    }, { rootMargin: '-10% 0px -70% 0px', threshold: 0 });
+
+    // Observe ReDoc operations once they're rendered
+    const observeReDocOps = setInterval(() => {
+      const ops = document.querySelectorAll('[id^="tag/"]');
+      if (ops.length > 0) {
+        ops.forEach(op => scrollSpy.observe(op));
+        clearInterval(observeReDocOps);
+      }
+    }, 500);
+
+    // ReDoc init — mount into visible main content, hide ReDoc's own sidebar
+    let redocInitialized = false;
+    function initRedoc() {
+      if (redocInitialized) return;
+      redocInitialized = true;
+      const mount = document.getElementById('redoc-mount');
+      mount.style.display = 'block';
+      Redoc.init('__SPEC_URL__', {
+        hideHostname: false,
+        hideLoading: false,
+        nativeScrollbars: true,
+        pathInMiddlePanel: true,
+        disableSearch: false,
+        hideDownloadButton: false,
+        scrollYOffset: 56,
+      }, mount, function() {
+        // Hide ReDoc's built-in sidebar — we use our custom one
+        const redocSidebar = document.querySelector('.api-info + div, .redoc-wrap > div:first-child');
+        if (redocSidebar) redocSidebar.style.display = 'none';
+        // Hide the right panel since ReDoc shows examples inline
+        const rp = document.getElementById('rightPanel');
+        if (rp) rp.style.display = 'none';
+        // Expand main content
+        document.getElementById('main-content').style.maxWidth = '100%';
+        document.getElementById('main-content').style.padding = '24px 48px';
+      });
+    }
+
+    // Init
+    checkAuth();
+  </script>
+</body>
+</html>

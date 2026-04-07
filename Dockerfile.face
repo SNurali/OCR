@@ -1,0 +1,38 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y \
+    tesseract-ocr \
+    tesseract-ocr-uzb \
+    tesseract-ocr-rus \
+    tesseract-ocr-eng \
+    libgl1 \
+    libglx-mesa0 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    libprotobuf-dev \
+    protobuf-compiler \
+    g++ \
+    libgtk2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir --upgrade pip
+RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu torch==2.2.2+cpu torchvision==0.17.2+cpu
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+RUN mkdir -p /app/data/encrypted /app/models
+
+CMD ["celery", "-A", "app.celery_app.celery_app", "worker", \
+     "--loglevel=info", \
+     "--concurrency=2", \
+     "--queues=face_verify", \
+     "--prefetch-multiplier=1", \
+     "--max-tasks-per-child=200"]

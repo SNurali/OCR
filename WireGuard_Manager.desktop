@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=WireGuard Manager (OCR Service)
+Comment=Управление WireGuard подключением
+Exec=/usr/bin/python3 /home/mrnurali/LOW\ PROJECTS/ocr-service/wireguard_manager.py
+Icon=network-vpn
+Terminal=false
+Categories=Network;Settings;
+Keywords=wireguard;vpn;network;

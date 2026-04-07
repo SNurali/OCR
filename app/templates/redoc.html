@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="__HTML_LANG__" data-theme="dark">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>__PAGE_TITLE__</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%234F8CFF'/><text x='50' y='70' text-anchor='middle' font-size='50' fill='white' font-family='system-ui'>⚡</text></svg>">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #0B0F14; --bg-surface: #111820; --bg-elevated: #161D27;
+      --bg-overlay: rgba(11,15,20,0.92);
+      --border-subtle: rgba(255,255,255,0.06); --border-default: rgba(255,255,255,0.1); --border-strong: rgba(255,255,255,0.15);
+      --text-primary: #F2F5F8; --text-secondary: #94A3B8; --text-tertiary: #64748B;
+      --accent-primary: #4F8CFF; --accent-primary-hover: #3B7BEE; --accent-glow: rgba(79,140,255,0.15);
+      --accent-gradient: linear-gradient(135deg, #4F8CFF 0%, #7C5CFC 50%, #A855F7 100%);
+      --accent-gradient-text: linear-gradient(135deg, #60A5FA 0%, #A78BFA 100%);
+      --status-success: #34D399; --status-success-bg: rgba(52,211,153,0.1);
+      --status-error: #F87171; --status-error-bg: rgba(248,113,113,0.1);
+      --method-get: #60A5FA; --method-get-bg: rgba(96,165,250,0.1);
+      --method-post: #34D399; --method-post-bg: rgba(52,211,153,0.1);
+      --method-put: #FBBF24; --method-put-bg: rgba(251,191,36,0.1);
+      --method-delete: #F87171; --method-delete-bg: rgba(248,113,113,0.1);
+      --method-patch: #C084FC; --method-patch-bg: rgba(192,132,252,0.1);
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+      --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px; --radius-xl: 20px;
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: var(--font-sans); background: var(--bg-base); color: var(--text-primary); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+    a { color: var(--accent-primary); text-decoration: none; transition: color 150ms var(--ease-out); }
+    a:hover { color: var(--accent-primary-hover); }
+    code { font-family: var(--font-mono); font-size: 0.875em; }
+    button { font-family: inherit; cursor: pointer; }
+    input { font-family: inherit; }
+
+    /* ===== AUTH GATE ===== */
+    .auth-gate {
+      position: fixed; inset: 0; z-index: 9999;
+      background: var(--bg-base);
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    .auth-gate.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+    .auth-gate::before {
+      content: ''; position: absolute; inset: 0;
+      background-image:
+        radial-gradient(circle at 20% 50%, rgba(79,140,255,0.06) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(124,92,252,0.06) 0%, transparent 50%),
+        radial-gradient(circle at 50% 80%, rgba(168,85,247,0.04) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    .auth-card {
+      position: relative; z-index: 1;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 40px 32px;
+      width: 100%; max-width: 400px;
+      box-shadow: 0 24px 48px rgba(0,0,0,0.4), 0 0 60px rgba(79,140,255,0.04);
+      animation: modalIn 0.3s var(--ease-out);
+    }
+    @keyframes modalIn { from { opacity: 0; transform: scale(0.96) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+    .auth-logo-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 32px; }
+    .auth-logo-icon {
+      width: 40px; height: 40px; background: var(--accent-gradient);
+      border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      font-size: 20px; color: white; box-shadow: 0 4px 16px rgba(79,140,255,0.3);
+    }
+    .auth-logo-text { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
+    .auth-logo-text span { background: var(--accent-gradient-text); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .auth-card h1 { font-size: 20px; font-weight: 700; text-align: center; margin-bottom: 6px; letter-spacing: -0.02em; }
+    .auth-subtitle { font-size: 13px; color: var(--text-tertiary); text-align: center; margin-bottom: 28px; }
+    .auth-form-group { margin-bottom: 16px; }
+    .auth-label { display: block; font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; }
+    .auth-input {
+      width: 100%; padding: 10px 14px; background: var(--bg-base);
+      border: 1px solid var(--border-default); border-radius: 10px;
+      color: var(--text-primary); font-size: 14px; outline: none; transition: all 150ms ease;
+    }
+    .auth-input:focus { border-color: var(--accent-primary); box-shadow: 0 0 0 3px var(--accent-glow); }
+    .auth-input::placeholder { color: var(--text-tertiary); }
+    .auth-error { display: none; font-size: 12px; color: var(--status-error); margin-top: 10px; padding: 8px 12px; background: var(--status-error-bg); border-radius: 8px; text-align: center; }
+    .auth-error.visible { display: block; }
+    .auth-btn {
+      width: 100%; padding: 11px; margin-top: 4px; border: none; border-radius: 10px;
+      background: var(--accent-primary); color: white; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: all 150ms ease;
+    }
+    .auth-btn:hover { background: var(--accent-primary-hover); box-shadow: 0 0 24px var(--accent-glow); }
+    .auth-btn:active { transform: scale(0.98); }
+    .auth-lang-row { display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 24px; padding: 3px; background: var(--bg-base); border-radius: 8px; border: 1px solid var(--border-subtle); width: fit-content; margin-left: auto; margin-right: auto; }
+    .auth-lang-link { color: var(--text-tertiary); text-decoration: none; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 500; transition: all 150ms ease; }
+    .auth-lang-link:hover { color: var(--text-secondary); }
+    .auth-footer { text-align: center; margin-top: 24px; font-size: 11px; color: var(--text-tertiary); }
+
+    /* ===== APP LAYOUT (hidden until auth) ===== */
+    .app-layout { display: none; grid-template-columns: 260px 1fr 380px; grid-template-rows: 56px 1fr; min-height: 100vh; }
+    .app-layout.visible { display: grid; }
+
+    /* ===== TOP BAR ===== */
+    .topbar { grid-column: 1/-1; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; height: 56px; background: var(--bg-overlay); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid var(--border-subtle); position: sticky; top: 0; z-index: 100; }
+    .topbar-brand { display: flex; align-items: center; gap: 10px; }
+    .topbar-logo { width: 28px; height: 28px; background: var(--accent-gradient); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 14px; color: white; font-weight: 700; }
+    .topbar-title { font-size: 14px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.01em; }
+    .topbar-title span { background: var(--accent-gradient-text); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .topbar-version { font-size: 11px; color: var(--text-tertiary); background: var(--bg-elevated); padding: 2px 8px; border-radius: 99px; border: 1px solid var(--border-subtle); margin-left: 8px; }
+    .topbar-actions { display: flex; align-items: center; gap: 6px; }
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: none; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500; transition: all 150ms var(--ease-out); white-space: nowrap; }
+    .btn-primary { background: var(--accent-primary); color: white; }
+    .btn-primary:hover { background: var(--accent-primary-hover); box-shadow: 0 0 20px var(--accent-glow); }
+    .btn-danger { background: var(--status-error-bg); color: var(--status-error); border: 1px solid rgba(248,113,113,0.15); }
+    .btn-danger:hover { background: rgba(248,113,113,0.15); }
+    .auth-badge { display: none; align-items: center; gap: 6px; padding: 4px 10px; background: var(--status-success-bg); border: 1px solid rgba(52,211,153,0.15); border-radius: 99px; font-size: 11px; color: var(--status-success); font-weight: 500; }
+    .auth-badge.visible { display: flex; }
+    .auth-badge-dot { width: 5px; height: 5px; background: var(--status-success); border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .lang-switcher { display: flex; align-items: center; gap: 2px; padding: 2px; background: var(--bg-surface); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); }
+    .lang-link { color: var(--text-tertiary); text-decoration: none; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; transition: all 150ms var(--ease-out); }
+    .lang-link:hover { color: var(--text-secondary); }
+    .lang-link.active { color: var(--text-primary); background: var(--bg-elevated); }
+
+    /* ===== REDOC CONTAINER ===== */
+    #redoc-container { grid-column: 1 / -1; height: calc(100vh - 56px); overflow: auto; display: flex; }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 1200px) { .app-layout { grid-template-columns: 240px 1fr; } .right-panel { display: none; } }
+    @media (max-width: 768px) { .app-layout { grid-template-columns: 1fr; } .sidebar { display: none; } .main-content { padding: 24px; } .content-hero h1 { font-size: 28px; } }
+    redoc { display: block; }
+  </style>
+</head>
+<body>
+  <!-- AUTH GATE: shown until token is verified -->
+  <div class="auth-gate" id="authGate">
+    <div class="auth-card">
+      <div class="auth-logo-row">
+        <div class="auth-logo-icon">⚡</div>
+        <div class="auth-logo-text"><span>OCRUZ</span> Passport API</div>
+      </div>
+      <h1>__LOGIN_TITLE__</h1>
+      <p class="auth-subtitle">Введите учётные данные для доступа к API</p>
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="auth-form-group">
+          <label class="auth-label">__USERNAME_PH__</label>
+          <input class="auth-input" type="text" id="username" placeholder="__USERNAME_PH__" autocomplete="username" required>
+        </div>
+        <div class="auth-form-group">
+          <label class="auth-label">__PASSWORD_PH__</label>
+          <input class="auth-input" type="password" id="password" placeholder="__PASSWORD_PH__" autocomplete="current-password" required>
+        </div>
+        <div class="auth-error" id="loginError">__LOGIN_ERROR__</div>
+        <button class="auth-btn" type="submit">__LOGIN_BTN__</button>
+      </form>
+      <div class="auth-lang-row">__LANG_LINKS__</div>
+      <div class="auth-footer">OCRUZ Passport API &copy; 2026</div>
+    </div>
+  </div>
+
+  <!-- APP LAYOUT: hidden until auth -->
+  <div class="app-layout" id="appLayout">
+    <header class="topbar">
+      <div class="topbar-brand">
+        <div class="topbar-logo">⚡</div>
+        <div class="topbar-title"><span>OCRUZ</span> Passport API</div>
+        <span class="topbar-version">v2.0</span>
+      </div>
+      <div class="topbar-actions">
+        <div class="auth-badge" id="authStatus"><div class="auth-badge-dot"></div><span id="authUsername"></span></div>
+        <button class="btn btn-primary" id="loginBtn" onclick="showLogin()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+          __LOGIN_BTN__
+        </button>
+        <button class="btn btn-danger" id="logoutBtn" onclick="logout()" style="display:none">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          __LOGOUT_BTN__
+        </button>
+        <div class="lang-switcher">__LANG_LINKS__</div>
+      </div>
+    </header>
+
+    <div id="redoc-container"></div>
+  </div>
+
+  
+  <!-- REDOC -->
+  <script src="https://cdn.jsdelivr.net/npm/redoc@2/bundles/redoc.standalone.js"></script>
+
+  <script>
+    const API_BASE = window.location.origin;
+    let authToken = localStorage.getItem('ocr_api_token') || '';
+    let currentUser = localStorage.getItem('ocr_api_user') || '';
+
+    // Intercept fetch for auth against the actual API
+    const originalFetch = window.fetch;
+    window.fetch = async function(...args) {
+      let [resource, config] = args;
+      if (!config) config = {};
+      if (!config.headers) config.headers = {};
+      
+      // Do not intercept Redoc spec fetch
+      if (typeof resource === 'string' && resource.startsWith('/api/')) {
+        let headersObj = config.headers instanceof Headers ? Object.fromEntries(config.headers.entries()) : config.headers;
+        if (authToken && !headersObj['Authorization'] && !headersObj['authorization']) {
+           if (config.headers instanceof Headers) {
+             config.headers.set('Authorization', 'Bearer ' + authToken);
+           } else {
+             config.headers['Authorization'] = 'Bearer ' + authToken;
+           }
+        }
+      }
+      return originalFetch.apply(this, args);
+    };
+
+    function checkAuth() {
+      if (authToken) {
+        document.getElementById('authGate').classList.add('hidden');
+        document.getElementById('appLayout').classList.add('visible');
+        document.getElementById('authStatus').classList.add('visible');
+        document.getElementById('authUsername').textContent = currentUser;
+        document.getElementById('loginBtn').style.display = 'none';
+        document.getElementById('logoutBtn').style.display = 'inline-flex';
+        initRedoc();
+      } else {
+        document.getElementById('authGate').classList.remove('hidden');
+        document.getElementById('appLayout').classList.remove('visible');
+        document.getElementById('authStatus').classList.remove('visible');
+        document.getElementById('loginBtn').style.display = 'inline-flex';
+        document.getElementById('logoutBtn').style.display = 'none';
+      }
+    }
+
+    let redocInitialized = false;
+    function initRedoc() {
+      if (redocInitialized) return;
+      redocInitialized = true;
+      Redoc.init('__SPEC_URL__', {
+        scrollYOffset: 56,
+        theme: {
+          colors: {
+            primary: { main: '#4F8CFF' },
+            success: { main: '#34D399' },
+            warning: { main: '#FBBF24' },
+            error:   { main: '#F87171' },
+            text: {
+              primary: '#F2F5F8',
+              secondary: '#94A3B8'
+            },
+            http: {
+              get: '#60A5FA',
+              post: '#34D399',
+              put: '#FBBF24',
+              delete: '#F87171'
+            }
+          },
+          typography: {
+            fontSize: '14px',
+            fontFamily: "'Inter', sans-serif",
+            headings: {
+              fontFamily: "'Inter', sans-serif",
+              fontWeight: '700',
+            },
+            code: {
+              fontFamily: "'JetBrains Mono', monospace"
+            }
+          },
+          sidebar: {
+            backgroundColor: '#111820',
+            textColor: '#94A3B8',
+            activeTextColor: '#4F8CFF'
+          },
+          rightPanel: {
+            backgroundColor: '#161D27'
+          }
+        }
+      }, document.getElementById('redoc-container'));
+    }
+
+    function showLogin() {
+      document.getElementById('authGate').classList.remove('hidden');
+      document.getElementById('appLayout').classList.remove('visible');
+      document.getElementById('username').focus();
+    }
+
+    function hideLogin() {
+      document.getElementById('loginError').classList.remove('visible');
+      document.getElementById('loginForm').reset();
+      checkAuth();
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const errorEl = document.getElementById('loginError');
+      try {
+        const params = new URLSearchParams();
+        params.append('username', username);
+        params.append('password', password);
+        const resp = await fetch(API_BASE + '/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: params.toString()
+        });
+        if (!resp.ok) { errorEl.classList.add('visible'); return; }
+        const data = await resp.json();
+        authToken = data.access_token;
+        currentUser = username;
+        localStorage.setItem('ocr_api_token', authToken);
+        localStorage.setItem('ocr_api_user', currentUser);
+        hideLogin();
+      } catch (err) { errorEl.classList.add('visible'); }
+    }
+
+    function logout() {
+      authToken = ''; currentUser = '';
+      localStorage.removeItem('ocr_api_token');
+      localStorage.removeItem('ocr_api_user');
+      redocInitialized = false;
+      document.getElementById('redoc-container').innerHTML = ''; // clear redoc instance
+      checkAuth();
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') { hideLogin(); }
+    });
+
+    // Init
+    checkAuth();
+  </script>
+
+</body>
+</html>

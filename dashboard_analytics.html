@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR Analytics Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; min-height: 100vh; }
+
+        .login-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .login-box { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        .login-box h1 { font-size: 24px; margin-bottom: 24px; text-align: center; color: #1a1a2e; }
+        .login-box input { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
+        .login-box button { width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+        .login-box button:hover { background: #5a6fd6; }
+
+        .dashboard { display: none; }
+        .dashboard.active { display: block; }
+
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 22px; }
+        .header-buttons { display: flex; gap: 8px; }
+        .header button { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
+        .header button:hover { background: rgba(255,255,255,0.3); }
+
+        .tabs { display: flex; background: white; border-bottom: 1px solid #e0e0e0; padding: 0 30px; }
+        .tab { padding: 12px 20px; cursor: pointer; border-bottom: 3px solid transparent; color: #666; font-size: 14px; font-weight: 500; }
+        .tab.active { color: #667eea; border-bottom-color: #667eea; }
+        .tab:hover { color: #333; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .filters-bar { background: white; padding: 16px 30px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; border-bottom: 1px solid #e0e0e0; }
+        .filter-group { display: flex; flex-direction: column; gap: 4px; }
+        .filter-group label { font-size: 12px; color: #666; font-weight: 500; }
+        .filter-group input, .filter-group select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; min-width: 140px; }
+        .filter-btn { padding: 8px 20px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; }
+        .filter-btn:hover { background: #5a6fd6; }
+        .reset-btn { padding: 8px 20px; background: #f5f5f5; color: #333; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; font-size: 13px; }
+        .export-btn { padding: 8px 20px; background: #43e97b; color: #1a1a2e; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+
+        .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; padding: 20px 30px; }
+        .stat-card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .stat-card .label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-card .value { font-size: 28px; font-weight: 700; color: #1a1a2e; margin-top: 4px; }
+        .stat-card .sub { font-size: 12px; color: #666; margin-top: 4px; }
+
+        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; padding: 0 30px 30px; }
+        .chart-card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .chart-card h3 { font-size: 15px; color: #333; margin-bottom: 16px; }
+        .chart-card canvas { max-height: 300px; }
+
+        /* Таблица записей */
+        .records-section { padding: 20px 30px; }
+        .records-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
+        .search-input { padding: 8px 16px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; width: 300px; max-width: 100%; }
+        .pagination { display: flex; gap: 4px; align-items: center; }
+        .pagination button { padding: 6px 12px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer; font-size: 13px; }
+        .pagination button:disabled { opacity: 0.5; cursor: default; }
+        .pagination button.active { background: #667eea; color: white; border-color: #667eea; }
+        .pagination span { font-size: 13px; color: #666; margin: 0 8px; }
+
+        .records-table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .records-table th { background: #f8f9fa; padding: 12px 16px; text-align: left; font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #e0e0e0; cursor: pointer; }
+        .records-table th:hover { background: #e9ecef; }
+        .records-table td { padding: 12px 16px; font-size: 13px; border-bottom: 1px solid #f0f0f0; }
+        .records-table tr:hover { background: #f8f9ff; }
+        .records-table tr { cursor: pointer; }
+
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+        .badge-success { background: #d4edda; color: #155724; }
+        .badge-partial { background: #fff3cd; color: #856404; }
+        .badge-failed { background: #f8d7da; color: #721c24; }
+        .badge-local { background: #d1ecf1; color: #0c5460; }
+        .badge-foreign { background: #f8d7da; color: #721c24; }
+
+        /* Модальное окно */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: white; border-radius: 12px; width: 90%; max-width: 700px; max-height: 90vh; overflow-y: auto; padding: 30px; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-header h2 { font-size: 20px; color: #1a1a2e; }
+        .modal-close { background: none; border: none; font-size: 24px; cursor: pointer; color: #666; }
+        .modal-close:hover { color: #333; }
+        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .detail-item { padding: 12px; background: #f8f9fa; border-radius: 8px; }
+        .detail-item .label { font-size: 11px; color: #888; text-transform: uppercase; margin-bottom: 4px; }
+        .detail-item .value { font-size: 15px; color: #1a1a2e; font-weight: 500; }
+        .detail-full { grid-column: 1 / -1; }
+
+        .loading { text-align: center; padding: 40px; color: #666; }
+        .error { background: #fee; color: #c00; padding: 12px; border-radius: 8px; margin: 20px 30px; }
+
+        @media (max-width: 768px) {
+            .filters-bar { flex-direction: column; align-items: stretch; }
+            .filter-group input, .filter-group select { min-width: auto; }
+            .charts-grid { grid-template-columns: 1fr; }
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+            .detail-grid { grid-template-columns: 1fr; }
+            .records-table { font-size: 12px; }
+            .records-table th, .records-table td { padding: 8px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container" id="loginScreen">
+        <div class="login-box">
+            <h1>🔐 OCR Analytics</h1>
+            <input type="text" id="loginUser" placeholder="Логин">
+            <input type="password" id="loginPass" placeholder="Пароль">
+            <button onclick="doLogin()">Войти</button>
+            <p id="loginError" style="color:red;margin-top:12px;display:none"></p>
+        </div>
+    </div>
+
+    <div class="dashboard" id="dashboard">
+        <div class="header">
+            <h1>📊 Аналитика паспортов</h1>
+            <div class="header-buttons">
+                <button onclick="exportCSV()">📥 Экспорт CSV</button>
+                <button onclick="doLogout()">Выйти</button>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('overview')">📊 Обзор</div>
+            <div class="tab" onclick="switchTab('records')">📋 Записи</div>
+            <div class="tab" onclick="switchTab('users')">👥 Пользователи</div>
+            <div class="tab" onclick="switchTab('accuracy')">🎯 Точность</div>
+        </div>
+
+        <!-- Фильтры (общие для всех вкладок) -->
+        <div class="filters-bar">
+            <div class="filter-group">
+                <label>Дата с</label>
+                <input type="date" id="f_start">
+            </div>
+            <div class="filter-group">
+                <label>Дата по</label>
+                <input type="date" id="f_end">
+            </div>
+            <div class="filter-group">
+                <label>Гражданство</label>
+                <select id="f_citizenship">
+                    <option value="">Все</option>
+                    <option value="UZ">Узбекистан</option>
+                    <option value="RU">Россия</option>
+                    <option value="KZ">Казахстан</option>
+                    <option value="TJ">Таджикистан</option>
+                    <option value="KG">Кыргызстан</option>
+                    <option value="TM">Туркменистан</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Статус</label>
+                <select id="f_status">
+                    <option value="">Все</option>
+                    <option value="local">Местные</option>
+                    <option value="foreign">Иностранцы</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Пол</label>
+                <select id="f_gender">
+                    <option value="">Все</option>
+                    <option value="M">Мужской</option>
+                    <option value="F">Женский</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Возраст</label>
+                <select id="f_age">
+                    <option value="">Все</option>
+                    <option value="0-18">0-18</option>
+                    <option value="19-25">19-25</option>
+                    <option value="26-35">26-35</option>
+                    <option value="36-45">36-45</option>
+                    <option value="46-55">46-55</option>
+                    <option value="56-65">56-65</option>
+                    <option value="65+">65+</option>
+                </select>
+            </div>
+            <button class="filter-btn" onclick="loadAll()">Применить</button>
+            <button class="reset-btn" onclick="resetFilters()">Сбросить</button>
+        </div>
+
+        <div id="errorBox" class="error" style="display:none"></div>
+
+        <!-- ВКЛАДКА: Обзор -->
+        <div class="tab-content active" id="tab-overview">
+            <div class="stats-row">
+                <div class="stat-card"><div class="label">Всего обработано</div><div class="value" id="s_total">—</div><div class="sub">паспортов</div></div>
+                <div class="stat-card"><div class="label">Местные</div><div class="value" id="s_local">—</div><div class="sub" id="s_local_pct"></div></div>
+                <div class="stat-card"><div class="label">Иностранцы</div><div class="value" id="s_foreign">—</div><div class="sub" id="s_foreign_pct"></div></div>
+                <div class="stat-card"><div class="label">Мужчины</div><div class="value" id="s_male">—</div><div class="sub" id="s_male_pct"></div></div>
+                <div class="stat-card"><div class="label">Женщины</div><div class="value" id="s_female">—</div><div class="sub" id="s_female_pct"></div></div>
+                <div class="stat-card"><div class="label">Средняя уверенность</div><div class="value" id="s_conf">—</div><div class="sub" id="s_conf_range"></div></div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-card"><h3>🌍 По гражданству</h3><canvas id="chartCitizenship"></canvas></div>
+                <div class="chart-card"><h3>👥 По полу</h3><canvas id="chartGender"></canvas></div>
+                <div class="chart-card"><h3>📅 По возрастным группам</h3><canvas id="chartAge"></canvas></div>
+                <div class="chart-card"><h3>📈 Динамика по времени</h3><canvas id="chartTime"></canvas></div>
+                <div class="chart-card"><h3>🎯 Распределение уверенности</h3><canvas id="chartConfidence"></canvas></div>
+                <div class="chart-card"><h3>🔗 Пол по возрастам</h3><canvas id="chartGenderAge"></canvas></div>
+            </div>
+        </div>
+
+        <!-- ВКЛАДКА: Записи -->
+        <div class="tab-content" id="tab-records">
+            <div class="records-section">
+                <div class="records-toolbar">
+                    <input type="text" class="search-input" id="recordSearch" placeholder="🔍 Поиск по ФИО, номеру паспорта, ПИНФЛ..." oninput="debounceSearch()">
+                    <div class="pagination" id="pagination"></div>
+                </div>
+                <table class="records-table">
+                    <thead>
+                        <tr>
+                            <th>Дата</th>
+                            <th>ФИО</th>
+                            <th>Гражданство</th>
+                            <th>Пол</th>
+                            <th>Возраст</th>
+                            <th>№ паспорта</th>
+                            <th>Уверенность</th>
+                            <th>Статус</th>
+                            <th>Загрузил</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recordsBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ВКЛАДКА: Пользователи -->
+        <div class="tab-content" id="tab-users">
+            <div class="records-section">
+                <table class="records-table">
+                    <thead>
+                        <tr><th>Пользователь</th><th>Роль</th><th>Всего</th><th>Местные</th><th>Иностранцы</th><th>Ср. точность</th></tr>
+                    </thead>
+                    <tbody id="usersBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ВКЛАДКА: Точность -->
+        <div class="tab-content" id="tab-accuracy">
+            <div class="records-section">
+                <div class="stats-row" id="accuracyStats"></div>
+                <div class="charts-grid">
+                    <div class="chart-card"><h3>🎯 Точность по полям</h3><canvas id="chartFieldAccuracy"></canvas></div>
+                    <div class="chart-card"><h3>📊 Общий статус</h3><canvas id="chartStatus"></canvas></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно деталей -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalTitle">Детали записи</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="detail-grid" id="modalContent"></div>
+        </div>
+    </div>
+
+    <script>
+    let token = localStorage.getItem('ocr_token');
+    let charts = {};
+    let currentPage = 1;
+    let searchTimeout = null;
+
+    if (token) showDashboard();
+
+    async function doLogin() {
+        const u = document.getElementById('loginUser').value;
+        const p = document.getElementById('loginPass').value;
+        try {
+            const r = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username: u, password: p})
+            });
+            if (!r.ok) throw new Error('Неверный логин или пароль');
+            const d = await r.json();
+            token = d.access_token || d.token;
+            localStorage.setItem('ocr_token', token);
+            showDashboard();
+        } catch(e) {
+            const el = document.getElementById('loginError');
+            el.textContent = e.message; el.style.display = 'block';
+        }
+    }
+
+    function showDashboard() {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('dashboard').classList.add('active');
+        loadAll();
+    }
+
+    function doLogout() {
+        localStorage.removeItem('ocr_token');
+        token = null;
+        location.reload();
+    }
+
+    function resetFilters() {
+        ['f_start','f_end','f_citizenship','f_status','f_gender','f_age'].forEach(id => document.getElementById(id).value = '');
+        currentPage = 1;
+        loadAll();
+    }
+
+    function authHeaders() {
+        return {'Authorization': 'Bearer ' + token};
+    }
+
+    function switchTab(name) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        event.target.classList.add('active');
+        document.getElementById('tab-' + name).classList.add('active');
+        if (name === 'records') loadRecords();
+        if (name === 'users') loadUsers();
+        if (name === 'accuracy') loadAccuracy();
+    }
+
+    function getFilterParams() {
+        const params = new URLSearchParams();
+        const v = (id) => document.getElementById(id).value;
+        if (v('f_start')) params.set('start_date', v('f_start'));
+        if (v('f_end')) params.set('end_date', v('f_end'));
+        if (v('f_citizenship')) params.set('citizenship', v('f_citizenship'));
+        if (v('f_gender')) params.set('gender', v('f_gender'));
+        if (v('f_age')) params.set('age_group', v('f_age'));
+        if (v('f_status')) params.set('is_foreigner', v('f_status') === 'foreign');
+        return params;
+    }
+
+    async function loadAll() {
+        const errBox = document.getElementById('errorBox');
+        errBox.style.display = 'none';
+        const params = getFilterParams();
+
+        try {
+            const [full, gender, age, nationality] = await Promise.all([
+                fetch('/api/v1/analytics/full-analytics?' + params, {headers: authHeaders()}).then(r => r.json()),
+                fetch('/api/v1/analytics/gender-report?' + params, {headers: authHeaders()}).then(r => r.json()),
+                fetch('/api/v1/analytics/age-report?' + params, {headers: authHeaders()}).then(r => r.json()),
+                fetch('/api/v1/analytics/nationality-report?' + params, {headers: authHeaders()}).then(r => r.json()),
+            ]);
+
+            updateStats(full, gender, age);
+            updateCharts(full, gender, age, nationality);
+            loadRecords();
+            loadUsers();
+            loadAccuracy();
+        } catch(e) {
+            errBox.textContent = 'Ошибка загрузки: ' + e.message;
+            errBox.style.display = 'block';
+        }
+    }
+
+    function updateStats(full, gender, age) {
+        document.getElementById('s_total').textContent = full.total || 0;
+        const fs = full.by_foreigner_status || {};
+        document.getElementById('s_local').textContent = fs.local || 0;
+        document.getElementById('s_foreign').textContent = fs.foreign || 0;
+        const t = full.total || 1;
+        document.getElementById('s_local_pct').textContent = Math.round((fs.local||0)/t*100) + '%';
+        document.getElementById('s_foreign_pct').textContent = Math.round((fs.foreign||0)/t*100) + '%';
+        document.getElementById('s_male').textContent = gender.male?.count || 0;
+        document.getElementById('s_female').textContent = gender.female?.count || 0;
+        document.getElementById('s_male_pct').textContent = gender.male?.percent + '%';
+        document.getElementById('s_female_pct').textContent = gender.female?.percent + '%';
+        const cs = full.confidence_stats || {};
+        document.getElementById('s_conf').textContent = (cs.avg || 0).toFixed(1) + '%';
+        document.getElementById('s_conf_range').textContent = `min: ${cs.min||0}% / max: ${cs.max||0}%`;
+    }
+
+    function makeChart(id, type, data, opts) {
+        if (charts[id]) charts[id].destroy();
+        charts[id] = new Chart(document.getElementById(id), {type, data, options: {responsive: true, maintainAspectRatio: true, ...opts}});
+    }
+
+    function updateCharts(full, gender, age, nationality) {
+        const citLabels = Object.keys(full.by_citizenship || {});
+        const citData = Object.values(full.by_citizenship || {});
+        makeChart('chartCitizenship', 'pie', {
+            labels: citLabels,
+            datasets: [{data: citData, backgroundColor: ['#667eea','#764ba2','#f093fb','#4facfe','#43e97b','#fa709a','#fee140','#a18cd1']}]
+        });
+
+        makeChart('chartGender', 'doughnut', {
+            labels: ['Мужчины', 'Женщины', 'Не указан'],
+            datasets: [{data: [gender.male?.count||0, gender.female?.count||0, gender.unknown?.count||0], backgroundColor: ['#4facfe','#f093fb','#ddd']}]
+        });
+
+        const ageGroups = age.groups || {};
+        makeChart('chartAge', 'bar', {
+            labels: Object.keys(ageGroups),
+            datasets: [{label: 'Количество', data: Object.values(ageGroups), backgroundColor: '#667eea'}]
+        }, {scales: {y: {beginAtZero: true}}});
+
+        const ts = full.time_series || [];
+        makeChart('chartTime', 'line', {
+            labels: ts.map(d => d.period),
+            datasets: [{label: 'Паспорта', data: ts.map(d => d.count), borderColor: '#667eea', backgroundColor: 'rgba(102,126,234,0.1)', fill: true, tension: 0.3}]
+        }, {scales: {y: {beginAtZero: true}}});
+
+        const cs = full.confidence_stats || {};
+        makeChart('chartConfidence', 'bar', {
+            labels: ['Мин', 'Средняя', 'Макс'],
+            datasets: [{data: [cs.min||0, cs.avg||0, cs.max||0], backgroundColor: ['#fa709a','#667eea','#43e97b']}]
+        }, {scales: {y: {beginAtZero: true, max: 100}}});
+
+        const ageKeys = Object.keys(age.groups || {});
+        makeChart('chartGenderAge', 'bar', {
+            labels: ageKeys,
+            datasets: [
+                {label: 'Мужчины', data: ageKeys.map(k => Math.round((age.groups[k]||0) * 0.5)), backgroundColor: '#4facfe'},
+                {label: 'Женщины', data: ageKeys.map(k => Math.round((age.groups[k]||0) * 0.5)), backgroundColor: '#f093fb'}
+            ]
+        }, {scales: {y: {beginAtZero: true}, x: {stacked: true}}, plugins: {legend: {position: 'bottom'}}});
+    }
+
+    // ─── Записи ───
+
+    async function loadRecords() {
+        const params = getFilterParams();
+        params.set('page', currentPage);
+        params.set('per_page', 20);
+        const search = document.getElementById('recordSearch')?.value;
+        if (search) params.set('search', search);
+
+        try {
+            const r = await fetch('/api/v1/analytics/records?' + params, {headers: authHeaders()});
+            const data = await r.json();
+            renderRecords(data);
+        } catch(e) { console.error(e); }
+    }
+
+    function renderRecords(data) {
+        const tbody = document.getElementById('recordsBody');
+        tbody.innerHTML = data.items.map(r => `
+            <tr onclick="showDetail(${r.id})">
+                <td>${r.created_at ? r.created_at.slice(0,10) : '—'}</td>
+                <td>${r.last_name || ''} ${r.first_name || ''}</td>
+                <td><span class="badge ${r.is_foreigner ? 'badge-foreign' : 'badge-local'}">${r.citizenship || '—'}</span></td>
+                <td>${r.gender || '—'}</td>
+                <td>${r.age_group || '—'}</td>
+                <td>${r.passport_number || '—'}</td>
+                <td>${r.confidence ? (r.confidence * 100).toFixed(1) + '%' : '—'}</td>
+                <td><span class="badge badge-${r.recognition_status || 'partial'}">${r.recognition_status || 'partial'}</span></td>
+                <td>${r.uploaded_by || '—'}</td>
+            </tr>
+        `).join('');
+
+        const pag = document.getElementById('pagination');
+        let html = `<button onclick="goPage(${currentPage-1})" ${currentPage<=1?'disabled':''}>←</button>`;
+        for (let i = 1; i <= data.pages; i++) {
+            if (i === 1 || i === data.pages || Math.abs(i - currentPage) <= 2) {
+                html += `<button class="${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+            } else if (Math.abs(i - currentPage) === 3) {
+                html += `<span>...</span>`;
+            }
+        }
+        html += `<button onclick="goPage(${currentPage+1})" ${currentPage>=data.pages?'disabled':''}>→</button>`;
+        html += `<span>${data.total} записей</span>`;
+        pag.innerHTML = html;
+    }
+
+    function goPage(p) { currentPage = p; loadRecords(); }
+    function debounceSearch() { clearTimeout(searchTimeout); searchTimeout = setTimeout(() => { currentPage = 1; loadRecords(); }, 400); }
+
+    // ─── Детали записи ───
+
+    async function showDetail(id) {
+        try {
+            const r = await fetch(`/api/v1/analytics/records/${id}`, {headers: authHeaders()});
+            const d = await r.json();
+            document.getElementById('modalTitle').textContent = `${d.last_name || ''} ${d.first_name || ''}`;
+            const fields = [
+                ['ФИО', `${d.last_name} ${d.first_name} ${d.middle_name}`.trim()],
+                ['Дата рождения', d.birth_date],
+                ['Пол', d.gender],
+                ['Гражданство', d.citizenship],
+                ['Возрастная группа', d.age_group],
+                ['Иностранец', d.is_foreigner ? 'Да' : 'Нет'],
+                ['Номер паспорта', d.passport_number],
+                ['Серия', d.passport_series],
+                ['ПИНФЛ', d.pinfl],
+                ['Дата выдачи', d.issue_date],
+                ['Действителен до', d.expiry_date],
+                ['Кем выдан', d.issued_by],
+                ['MRZ валиден', d.mrz_valid ? '✅ Да' : '❌ Нет'],
+                ['Уверенность', d.confidence ? (d.confidence*100).toFixed(1)+'%' : '—'],
+                ['Ср. уверенность OCR', d.ocr_confidence_avg ? d.ocr_confidence_avg.toFixed(1)+'%' : '—'],
+                ['Уверенность MRZ', d.mrz_confidence ? d.mrz_confidence.toFixed(1)+'%' : '—'],
+                ['Статус', d.recognition_status],
+                ['Время обработки', d.processing_time_ms ? d.processing_time_ms + ' мс' : '—'],
+                ['Загрузил', d.uploaded_by || '—'],
+                ['Дата загрузки', d.created_at ? d.created_at.slice(0,19).replace('T',' ') : '—'],
+            ];
+            document.getElementById('modalContent').innerHTML = fields.map(([l,v]) => `
+                <div class="detail-item"><div class="label">${l}</div><div class="value">${v || '—'}</div></div>
+            `).join('');
+
+            if (d.field_confidence && Object.keys(d.field_confidence).length) {
+                document.getElementById('modalContent').innerHTML += `
+                    <div class="detail-item detail-full">
+                        <div class="label">Точность по полям</div>
+                        <div class="value">${Object.entries(d.field_confidence).map(([k,v]) => `${k}: ${v.toFixed(0)}%`).join(' | ')}</div>
+                    </div>`;
+            }
+
+            document.getElementById('detailModal').classList.add('active');
+        } catch(e) { console.error(e); }
+    }
+
+    function closeModal() { document.getElementById('detailModal').classList.remove('active'); }
+
+    // ─── Пользователи ───
+
+    async function loadUsers() {
+        const params = getFilterParams();
+        try {
+            const r = await fetch('/api/v1/analytics/by-user?' + params, {headers: authHeaders()});
+            const data = await r.json();
+            document.getElementById('usersBody').innerHTML = data.map(u => `
+                <tr>
+                    <td>${u.username}</td>
+                    <td>${u.role}</td>
+                    <td>${u.total}</td>
+                    <td>${u.local_count}</td>
+                    <td>${u.foreign_count}</td>
+                    <td>${u.avg_confidence}%</td>
+                </tr>
+            `).join('');
+        } catch(e) { console.error(e); }
+    }
+
+    // ─── Точность ───
+
+    async function loadAccuracy() {
+        const params = getFilterParams();
+        try {
+            const r = await fetch('/api/v1/analytics/accuracy-detail?' + params, {headers: authHeaders()});
+            const data = await r.json();
+
+            const o = data.overall || {};
+            document.getElementById('accuracyStats').innerHTML = `
+                <div class="stat-card"><div class="label">Успешно</div><div class="value" style="color:#28a745">${o.success||0}</div></div>
+                <div class="stat-card"><div class="label">Частично</div><div class="value" style="color:#ffc107">${o.partial||0}</div></div>
+                <div class="stat-card"><div class="label">Неудачно</div><div class="value" style="color:#dc3545">${o.failed||0}</div></div>
+            `;
+
+            const fields = data.fields || {};
+            const fLabels = Object.keys(fields);
+            const fData = fLabels.map(k => fields[k].success_rate);
+            makeChart('chartFieldAccuracy', 'bar', {
+                labels: fLabels.map(l => l.replace('_', ' ')),
+                datasets: [{label: '% успеха', data: fData, backgroundColor: fData.map(v => v >= 80 ? '#43e97b' : v >= 50 ? '#ffc107' : '#fa709a')}]
+            }, {scales: {y: {beginAtZero: true, max: 100}}});
+
+            makeChart('chartStatus', 'doughnut', {
+                labels: ['Успешно', 'Частично', 'Неудачно'],
+                datasets: [{data: [o.success||0, o.partial||0, o.failed||0], backgroundColor: ['#43e97b','#ffc107','#fa709a']}]
+            });
+        } catch(e) { console.error(e); }
+    }
+
+    // ─── Экспорт CSV ───
+
+    function exportCSV() {
+        const params = getFilterParams();
+        const url = '/api/v1/analytics/export/csv?' + params;
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'ocr_export.csv';
+        a.click();
+    }
+
+    // Enter key login
+    document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+    document.getElementById('detailModal').addEventListener('click', e => { if (e.target.id === 'detailModal') closeModal(); });
+    </script>
+</body>
+</html>

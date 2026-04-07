@@ -1,0 +1,51 @@
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.env
+.env.*
+!.env.example
+*.log
+
+# Virtual environments
+venv/
+.venv/
+.venv-*/
+
+# Test data
+pytest_cache/
+
+# Uploaded files
+uploads/
+
+# SSL certificates
+nginx/ssl/*.pem
+
+# ML models
+models/*.pt
+models/*.pth
+
+# Data
+data/
+
+# Test images (passport photos should not be committed)
+passport_test*.jpg
+*.png
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation artifacts
+*.pdf
+
+# Qwen
+.qwen/

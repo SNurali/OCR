@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="__HTML_LANG__">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>OCRUZ Passport API — __LOGIN_TITLE__</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%234F8CFF'/><text x='50' y='70' text-anchor='middle' font-size='50' fill='white' font-family='system-ui'>⚡</text></svg>">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0B0F14;
+      --surface: #111820;
+      --border: rgba(255,255,255,0.06);
+      --text: #F2F5F8;
+      --text-secondary: #94A3B8;
+      --text-muted: #64748B;
+      --accent: #4F8CFF;
+      --accent-hover: #3B7BEE;
+      --accent-glow: rgba(79,140,255,0.15);
+      --error: #F87171;
+      --error-bg: rgba(248,113,113,0.1);
+      --gradient: linear-gradient(135deg, #4F8CFF 0%, #7C5CFC 50%, #A855F7 100%);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+    /* Background grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(circle at 20% 50%, rgba(79,140,255,0.06) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(124,92,252,0.06) 0%, transparent 50%),
+        radial-gradient(circle at 50% 80%, rgba(168,85,247,0.04) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .login-container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 400px;
+      padding: 0 20px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 40px 32px;
+      box-shadow: 0 24px 48px rgba(0,0,0,0.4), 0 0 60px rgba(79,140,255,0.04);
+    }
+    .logo-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 32px;
+    }
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--gradient);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: white;
+      box-shadow: 0 4px 16px rgba(79,140,255,0.3);
+    }
+    .logo-text {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .logo-text span {
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    h1 {
+      font-size: 20px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 6px;
+      letter-spacing: -0.02em;
+    }
+    .subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .form-group { margin-bottom: 16px; }
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+    .form-input {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: all 0.15s ease;
+    }
+    .form-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    .form-input::placeholder { color: var(--text-muted); }
+    .form-error {
+      display: none;
+      font-size: 12px;
+      color: var(--error);
+      margin-top: 10px;
+      padding: 8px 12px;
+      background: var(--error-bg);
+      border-radius: 8px;
+      text-align: center;
+    }
+    .form-error.visible { display: block; }
+    .btn {
+      width: 100%;
+      padding: 11px;
+      margin-top: 4px;
+      border: none;
+      border-radius: 10px;
+      background: var(--accent);
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn:hover {
+      background: var(--accent-hover);
+      box-shadow: 0 0 24px var(--accent-glow);
+    }
+    .btn:active { transform: scale(0.98); }
+    .lang-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      margin-top: 24px;
+      padding: 3px;
+      background: var(--bg);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      width: fit-content;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .lang-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 500;
+      transition: all 0.15s ease;
+    }
+    .lang-link:hover { color: var(--text-secondary); }
+    .footer {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="card">
+      <div class="logo-row">
+        <div class="logo-icon">⚡</div>
+        <div class="logo-text"><span>OCRUZ</span> Passport API</div>
+      </div>
+      <h1>__LOGIN_TITLE__</h1>
+      <p class="subtitle">__LOGIN_SUBTITLE__</p>
+      <form id="form" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label class="form-label">__USERNAME_PH__</label>
+          <input class="form-input" type="text" id="username" placeholder="__USERNAME_PH__" autocomplete="username" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">__PASSWORD_PH__</label>
+          <input class="form-input" type="password" id="password" placeholder="__PASSWORD_PH__" autocomplete="current-password" required>
+        </div>
+        <div class="form-error" id="error">__LOGIN_ERROR__</div>
+        <button class="btn" type="submit">__LOGIN_BTN__</button>
+      </form>
+    </div>
+    <div class="lang-row">__LANG_LINKS__</div>
+    <div class="footer">__FOOTER__</div>
+  </div>
+  <script>
+    async function handleLogin(e) {
+      e.preventDefault();
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const errorEl = document.getElementById('error');
+      try {
+        const params = new URLSearchParams();
+        params.append('username', username);
+        params.append('password', password);
+        const resp = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: params.toString()
+        });
+        if (!resp.ok) { errorEl.classList.add('visible'); return; }
+        const data = await resp.json();
+        document.cookie = 'ocr_api_token=' + data.access_token + '; path=/; max-age=28800; SameSite=Lax';
+        window.location.reload();
+      } catch (err) {
+        errorEl.classList.add('visible');
+      }
+    }
+  </script>
+</body>
+</html>
