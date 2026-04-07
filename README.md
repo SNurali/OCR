@@ -1,105 +1,105 @@
 # Uzbek Passport OCR Service
 
-Высокоточный OCR-сервис для распознавания данных из паспортов Узбекистана с использованием **PaddleOCR-VL 1.5** и умной коррекции ошибок.
+Высокоточный OCR-сервис для распознавания данных из паспортов Узбекистана с использованием **Qwen3.5-Plus Vision** (Alibaba Cloud DashScope).
 
 ## Возможности
 
-### 🚀 Современные OCR движки
-- ✅ **PaddleOCR-VL 1.5** (основной) - vision-language модель для документов
-- ✅ **EasyOCR** (fallback 1) - резервный движок
-- ✅ **Tesseract** (fallback 2) - для MRZ зоны
-
-### 🎯 Предобработка изображений
-- ✅ **Специализированная для узбекских паспортов** - CLAHE, sharpening, color correction
-- ✅ **Авто-кроп и выравнивание** - детекция границ документа
-- ✅ **Удаление шума** - Non-local means denoising
-- ✅ **Улучшение контраста** - адаптивная бинаризация
+### 🚀 Qwen Vision API — единственный OCR движок
+- ✅ **qwen3.5-plus** — мультимодальная модель с визуальным пониманием документов
+- ✅ OpenAI API-совместимый протокол
+- ✅ Автоматическое сжатие изображений перед отправкой
+- ✅ Retry с exponential backoff при ошибках
 
 ### 🧠 Умная обработка
-- ✅ **MRZ-first стратегия** - использование MRZ как источника истины
-- ✅ **Контекстная коррекция ошибок** - исправление типичных ошибок OCR
-- ✅ **Валидация данных** - проверка дат, номеров, ПИНФЛ
-- ✅ **Оценка уверенности** - per-field confidence scoring
+- ✅ **Контекстная экстракция** — LLM понимает структуру паспорта
+- ✅ **Валидация данных** — проверка дат, номеров, ПИНФЛ (14 цифр)
+- ✅ **Оценка уверенности** — per-field confidence scoring
+- ✅ **Нормализация** — автоприведение дат к DD.MM.YYYY, пола к M/F
 
 ### 🔧 Интеграция
-- ✅ **REST API** - FastAPI endpoints
-- ✅ **Docker** - контейнеризация
-- ✅ **Мониторинг** - Prometheus metrics
+- ✅ **REST API** — FastAPI endpoints
+- ✅ **Docker** — полная контейнеризация (API, Celery, Postgres, Redis, Nginx)
+- ✅ **Мониторинг** — Prometheus metrics + Grafana dashboards
+- ✅ **Асинхронная обработка** — Celery task queue
 
-## Что нового (Апрель 2026)
+## Архитектура
 
-### Интеграция PaddleOCR-VL
-- **PaddleOCR-VL 1.5** как основной OCR движок
-- На 15-20% точнее для документов благодаря vision-language архитектуре
-- Лучшее понимание структуры паспорта
-
-### Умная коррекция ошибок
-- Контекстно-зависимая коррекция (имена, даты, номера)
-- Валидация узбекских имен и фамилий
-- Исправление типичных OCR ошибок (0→O, 1→I, 5→S, etc.)
-
-### Улучшенная предобработка
-- Специализированный pipeline для узбекских паспортов
-- Увеличение разрешения в 2 раза
-- Коррекция цвета для удаления желтого/зеленого оттенка
-- Sharpening для мелких деталей
+```
+Upload → FastAPI API → Celery Queue → Qwen Vision API → Validation → PostgreSQL
+                                    ↓
+                              Image compression
+                              JSON extraction
+                              Field normalization
+```
 
 ## Установка
 
 ### Требования
 
-- Python 3.9+
-- Tesseract OCR
-- PaddlePaddle (устанавливается автоматически)
+- Python 3.11+
+- Docker & Docker Compose (рекомендуется)
+- API ключ Qwen (Alibaba Cloud DashScope)
 
 ### Быстрый старт
 
 ```bash
-# Установка системных зависимостей (Ubuntu/Debian)
-sudo apt-get update
-sudo apt-get install -y tesseract-ocr tesseract-ocr-eng tesseract-ocr-rus
+# 1. Клонируйте репозиторий
+cd ocr-service
 
-# Установка Python зависимостей
-pip install -r requirements.txt
+# 2. Настройте API ключ
+cp .env.example .env
+# Отредактируйте .env, вставьте QWEN_API_KEY
 
-# Запуск тестового скрипта
-python test_paddle_ocr.py passport_test.jpg
+# 3. Запуск через Docker Compose
+docker-compose up -d
+
+# API запустится на http://localhost:8001
+# Dashboard: http://localhost:8080
 ```
 
-### Запуск API сервера
+### Ручной запуск (без Docker)
 
 ```bash
-# Вариант 1: Через uvicorn
-cd src
-python main.py
+# Установка зависимостей
+pip install -r requirements.txt
 
-# Вариант 2: Через FastAPI
+# Запуск API сервера
+cd /home/mrnurali/LOW\ PROJECTS/ocr-service
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Сервер запустится на `http://localhost:8000`
+## API Endpoints
 
-### API Endpoints
-
-#### Health Check
+### Health Check
 ```bash
-curl http://localhost:8000/health
+curl http://localhost:8000/api/health
 ```
 
-#### OCR паспорта (базовый)
+### OCR паспорта (асинхронный)
 ```bash
-curl -X POST "http://localhost:8000/api/v1/ocr/passport" \
-  -H "accept: application/json" \
-  -H "Content-Type: multipart/form-data" \
+curl -X POST "http://localhost:8000/api/passport/scan" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -F "file=@passport.jpg"
+```
+Возвращает `task_id` для отслеживания статуса.
+
+### OCR паспорта (синхронный тест)
+```bash
+curl -X POST "http://localhost:8000/api/passport/test-ocr" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -F "file=@passport.jpg"
 ```
 
-#### OCR с отладочной информацией
+### Статус задачи
 ```bash
-curl -X POST "http://localhost:8000/api/v1/ocr/passport/debug" \
-  -H "accept: application/json" \
-  -H "Content-Type: multipart/form-data" \
-  -F "file=@passport.jpg"
+curl "http://localhost:8000/api/passport/status/{task_id}" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+### Результат OCR
+```bash
+curl "http://localhost:8000/api/passport/result/{task_id}" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 ### Пример ответа API
@@ -107,22 +107,27 @@ curl -X POST "http://localhost:8000/api/v1/ocr/passport/debug" \
 ```json
 {
   "success": true,
-  "confidence": 0.87,
+  "confidence": 0.92,
   "data": {
     "first_name": "NURALI",
     "last_name": "SULATMANOV",
     "middle_name": "AMIRJONOVICH",
     "birth_date": "24.03.2022",
-    "gender": "ERKAK",
+    "gender": "M",
     "nationality": "O'ZBEKISTON",
-    "passport_number": "AM79792",
-    "pinfl": "01509860230078",
-    "issued_by": "TOSHKENT"
+    "passport_number": "AN7979293",
+    "pinfl": "32409860230078",
+    "issued_by": "TOSHKENT SHAHAR IIB"
   },
-  "field_confidence": {
-    "first_name": 0.95,
-    "last_name": 0.92,
-    "birth_date": 0.98
+  "validation": {
+    "all_valid": true,
+    "checks": {
+      "first_name": true,
+      "last_name": true,
+      "birth_date": true,
+      "passport_number": true,
+      "pinfl": true
+    }
   }
 }
 ```
@@ -131,77 +136,60 @@ curl -X POST "http://localhost:8000/api/v1/ocr/passport/debug" \
 
 ```
 ocr-service/
-├── src/
-│   ├── main.py              # FastAPI приложение
-│   ├── passport_ocr.py      # Главный OCR модуль
-│   ├── preprocessing.py     # Предобработка изображений
-│   ├── ocr_engine.py        # OCR движок (Tesseract)
-│   ├── mrz_parser.py        # Парсер MRZ
-│   └── post_processor.py    # Пост-обработка и коррекция
+├── app/
+│   ├── main.py                 # FastAPI приложение
+│   ├── config.py               # Настройки (Qwen API, DB, JWT)
+│   ├── models.py               # SQLAlchemy модели
+│   ├── schemas.py              # Pydantic схемы
+│   ├── celery_app.py           # Celery конфигурация
+│   ├── routers/
+│   │   ├── passport.py         # OCR endpoints
+│   │   ├── auth.py             # JWT аутентификация
+│   │   ├── admin.py            # Админ-панель
+│   │   └── analytics.py        # Аналитика
+│   ├── services/
+│   │   ├── vlm_extractor.py    # Qwen Vision API клиент
+│   │   ├── ocr_analyzer.py     # Главный pipeline
+│   │   └── validator.py        # Валидация данных
+│   ├── tasks/
+│   │   └── ocr_task.py         # Celery task для OCR
+│   └── utils/
+├── alembic/                    # Миграции БД
 ├── tests/
-│   └── test_passport_ocr.py # Тесты
+├── docker-compose.yml
+├── Dockerfile
+├── Dockerfile.worker
 ├── requirements.txt
-└── README.md
+└── .env
 ```
 
-## Алгоритм работы
+## Конфигурация Qwen API
 
-1. **Предобработка**
-   - Увеличение разрешения
-   - Удаление шума (NLM)
-   - Улучшение контраста (CLAHE)
-   - Адаптивная бинаризация
-   - Удаление артефактов
+Получите API ключ на [Alibaba Cloud DashScope](https://dashscope.console.aliyun.com/)
 
-2. **OCR**
-   - Распознавание MRZ (специальные настройки)
-   - Распознавание полей паспорта
+| Переменная | Описание | Значение по умолчанию |
+|---|---|---|
+| `QWEN_API_KEY` | API ключ | `sk-sp-...` |
+| `QWEN_MODEL` | Модель | `qwen3.5-plus` |
+| `QWEN_BASE_URL` | Base URL | `https://coding-intl.dashscope.aliyuncs.com/v1` |
+| `VLM_TIMEOUT` | Timeout (сек) | `60` |
 
-3. **Парсинг MRZ**
-   - Разбор структуры TD3
-   - Валидация контрольных цифр
-   - Исправление ошибок OCR
+## Docker Compose сервисы
 
-4. **Пост-обработка**
-   - Коррекция имен/фамилий
-   - Валидация дат
-   - Нормализация полей
-   - Объединение с MRZ данными
-
-## Точность
-
-- **MRZ**: ~99% (при четком изображении)
-- **Поля паспорта**: ~95% (с коррекцией)
-- **Общая уверенность**: рассчитывается на основе:
-  - Валидности MRZ
-  - Наличия ключевых полей
-  - Уверенности OCR
+| Сервис | Порт | Описание |
+|---|---|---|
+| api | 8001:8000 | FastAPI API |
+| celery_worker | - | Фоновая обработка задач |
+| postgres | 5432:5432 | PostgreSQL БД |
+| redis | 6379:6379 | Redis (брокер задач) |
+| nginx | 8080, 8443 | Reverse proxy + SSL |
+| prometheus | 9090 | Метрики |
+| grafana | 3000 | Дашборды |
 
 ## Тестирование
 
 ```bash
-python -m pytest tests/
-```
-
-## Docker (опционально)
-
-```dockerfile
-FROM python:3.9-slim
-
-RUN apt-get update && apt-get install -y \
-    tesseract-ocr \
-    tesseract-ocr-eng \
-    tesseract-ocr-rus \
-    libgl1-mesa-glx \
-    libglib2.0-0
-
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-
-COPY src/ ./src/
-
-CMD ["python", "src/main.py"]
+pytest tests/ -v
 ```
 
 ## Лицензия

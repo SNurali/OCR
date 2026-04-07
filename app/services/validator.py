@@ -4,7 +4,7 @@ from typing import Dict, Optional
 
 
 class DataValidator:
-    """Валидация и нормализация извлечённых данных."""
+    """Валидация и нормализация данных из Qwen VLM."""
 
     def validate_pinfl(self, pinfl: str) -> bool:
         """ПИНФЛ = строго 14 цифр."""
@@ -38,7 +38,6 @@ class DataValidator:
                 birth_date = datetime.strptime(date_str, fmt)
                 now = datetime.now()
                 age = (now - birth_date).days / 365.25
-
                 return 0 < age < 150
             except ValueError:
                 continue
@@ -57,7 +56,6 @@ class DataValidator:
                 expiry = datetime.strptime(expiry_str, fmt)
                 if expiry < datetime.now():
                     return False
-
                 if birth_str and self.validate_date(birth_str):
                     for bfmt in formats:
                         try:
@@ -75,16 +73,11 @@ class DataValidator:
         """Валидация номера паспорта."""
         if not number:
             return False
-
         cleaned = re.sub(r"\s", "", number)
-
         if re.match(r"^[A-Z]{2}\d{7}$", cleaned, re.IGNORECASE):
             return True
         if re.match(r"^\d{9}$", cleaned):
             return True
-        if re.match(r"^\d{2}\d{2}\d{6}$", cleaned):
-            return True
-
         return False
 
     def normalize_date(self, date_str: str) -> str:
@@ -92,67 +85,64 @@ class DataValidator:
         if not date_str:
             return ""
 
-        formats = [
-            ("%Y-%m-%d", None),
-            ("%d.%m.%Y", None),
-            ("%d/%m/%Y", None),
-            ("%d-%m-%Y", None),
-            ("%Y%m%d", None),
-        ]
-
-        for fmt, _ in formats:
+        formats = ["%Y-%m-%d", "%d.%m.%Y", "%d/%m/%Y", "%d-%m-%Y", "%Y%m%d"]
+        for fmt in formats:
             try:
                 dt = datetime.strptime(date_str, fmt)
                 return dt.strftime("%d.%m.%Y")
             except ValueError:
                 continue
-
         return date_str
 
-    def calculate_confidence(
-        self, data: Dict, mrz_valid: bool, ocr_confidence: float
-    ) -> float:
-        """Расчёт общей уверенности распознавания."""
-        score = 0.0
-        max_score = 0.0
+    def calculate_confidence(self, data: Dict) -> float:
+        """Расчёт общей уверенности на основе заполненности и валидности полей."""
+        filled = 0
+        valid = 0
+        total = 0
 
-        fields = [
-            "first_name",
-            "last_name",
-            "birth_date",
-            "passport_number",
-            "nationality",
-            "gender",
-        ]
-
-        for field in fields:
-            max_score += 1.0
+        # Обязательные поля
+        for field in ["first_name", "last_name", "birth_date", "passport_number", "gender", "nationality"]:
+            total += 1
             if data.get(field):
-                score += 0.7
+                filled += 1
+                # Проверим валидность
+                if field == "birth_date":
+                    if self.validate_birth_date(data[field]):
+                        valid += 1
+                    else:
+                        valid += 0.5
+                elif field == "passport_number":
+                    if self.validate_passport_number(data[field]):
+                        valid += 1
+                    else:
+                        valid += 0.5
+                else:
+                    valid += 1
 
-        if mrz_valid:
-            score += 2.0
-        max_score += 2.0
+        # PINFL (не всегда есть, но если есть — важный сигнал)
+        if data.get("pinfl"):
+            total += 1
+            filled += 1
+            if self.validate_pinfl(data["pinfl"]):
+                valid += 1
+            else:
+                valid += 0.3
 
-        score += ocr_confidence * 1.0
-        max_score += 1.0
+        if total == 0:
+            return 0.0
 
-        if self.validate_pinfl(data.get("pinfl", "")):
-            score += 0.5
-        max_score += 0.5
+        # Комбинация заполненности и валидности
+        fill_ratio = filled / total
+        validity_ratio = valid / total
 
-        final_score = score / max_score
-        return round(min(final_score, 1.0), 2)
+        confidence = 0.4 * fill_ratio + 0.6 * validity_ratio
+        return round(min(confidence, 1.0), 2)
 
-    def validate(
-        self,
-        data: Dict,
-        mrz_data: Optional[Dict] = None,
-        ocr_confidence: float = 0.0,
-    ) -> Dict:
-        mrz_data = mrz_data or {}
+    def validate(self, data: Dict) -> Dict:
+        """Валидация всех полей, извлечённых Qwen VLM."""
         normalized = dict(data)
 
+        # Нормализация дат
         for field in ("birth_date", "issue_date", "expiry_date"):
             normalized[field] = self.normalize_date(str(normalized.get(field) or ""))
 
@@ -183,23 +173,19 @@ class DataValidator:
             "issued_by": bool(normalized.get("issued_by")),
         }
 
-        mrz_valid = bool(mrz_data.get("all_checks_valid") or mrz_data.get("valid"))
         all_valid = (
             checks["passport_number"]
             and checks["birth_date"]
-            and (mrz_valid or checks["expiry_date"] or checks["pinfl"])
+            and checks["gender"]
+            and checks["first_name"]
+            and checks["last_name"]
         )
 
         return {
             "normalized_data": normalized,
             "checks": checks,
-            "mrz_valid": mrz_valid,
             "all_valid": all_valid,
-            "overall_confidence": self.calculate_confidence(
-                normalized,
-                mrz_valid,
-                ocr_confidence,
-            ),
+            "overall_confidence": self.calculate_confidence(normalized),
         }
 
 

@@ -98,10 +98,6 @@ def process_ocr(
             record.expiry_date = extracted.get("expiry_date", "")
             record.issued_by = extracted.get("issued_by", "")
             record.pinfl = extracted.get("pinfl", "")
-            record.mrz_line1 = ""
-            record.mrz_line2 = ""
-            record.mrz_line3 = ""
-            record.mrz_valid = validation.get("mrz_valid", False)
             record.confidence = validation.get("overall_confidence", 0.0)
             record.raw_text = ""
             record.processing_time_ms = processing_time_ms
@@ -112,7 +108,6 @@ def process_ocr(
             record.age_group = _calculate_age_group(extracted.get("birth_date", ""))
             record.is_foreigner = record.citizenship != "UZ"
             record.ocr_confidence_avg = validation.get("overall_confidence", 0.0) * 100
-            record.mrz_confidence = 100.0 if validation.get("mrz_valid") else 0.0
 
             # Точность по каждому полю (на основе checks)
             checks = validation.get("checks", {})

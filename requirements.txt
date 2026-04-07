@@ -7,13 +7,8 @@ python-multipart==0.0.6
 pydantic>=2.7.0
 pydantic-settings>=2.1.0
 
-# Image Processing (только чтение изображений, без CV-пайплайна)
-opencv-python-headless>=4.9.0.80
-numpy==1.26.3
+# Image Processing (чтение и сжатие изображений)
 Pillow==10.2.0
-
-# MRZ parsing (оставляем для fallback парсинга, если VLM не справится)
-mrz>=0.4.3
 
 # Database
 sqlalchemy==2.0.25
@@ -41,6 +36,3 @@ slowapi==0.1.9
 pytest==7.4.4
 pytest-asyncio==0.23.3
 pytest-cov==4.1.0
-
-# VLM - Google Gemini API
-google-generativeai>=0.8.0

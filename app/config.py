@@ -4,7 +4,7 @@ from typing import Optional
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "OCR Passport Service"
-    VERSION: str = "2.1.0"
+    VERSION: str = "2.2.0"
 
     # PostgreSQL
     DB_HOST: str = "postgres"
@@ -27,10 +27,6 @@ class Settings(BaseSettings):
     # Encryption
     ENCRYPTION_KEY: str = "your-32-byte-encryption-key-here!"
 
-    # OCR Settings
-    OCR_LANGUAGES: str = "uzb+rus+eng"
-    OCR_CONFIDENCE_THRESHOLD: float = 0.4
-
     # File Settings
     MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB
     ALLOWED_EXTENSIONS: list = ["jpg", "jpeg", "png", "tiff", "bmp", "webp"]
@@ -40,35 +36,12 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     LOG_FORMAT: str = "json"
 
-    # VLM (Vision-Language Model)
-    VLM_ENABLED: bool = True
-    VLM_PROVIDER: str = "ollama"  # 'groq', 'qwen', 'gemini', or 'ollama'
-
-    # Groq (Free & Fast - Llama 3.2 Vision)
-    GROQ_API_KEY: str = ""
-    GROQ_MODEL: str = "llama-3.2-11b-vision-preview"
-    GROQ_BASE_URL: str = "https://api.groq.com/openai/v1"
-
-    # Google Gemini (резерв)
-    GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-2.5-flash"
-
-    # Alibaba Qwen-VL (Cloud Plan)
+    # Qwen VLM (Alibaba Cloud — DashScope)
+    # Единственный провайдер OCR/Vision
     QWEN_API_KEY: str = ""
     QWEN_MODEL: str = "qwen3.5-plus"
     QWEN_BASE_URL: str = "https://coding-intl.dashscope.aliyuncs.com/v1"
-
-    # Ollama (локально или Cloud - Nemotron)
-    OLLAMA_API_KEY: str = ""
-    OLLAMA_MODEL: str = "nemotron-3-super:cloud"
-    OLLAMA_BASE_URL: str = "https://ollama.com/v1"  # Cloud API
-
     VLM_TIMEOUT: int = 60
-
-    # Anti-Fraud (image quality checks)
-    ANTI_FRAUD_BLUR_THRESHOLD: int = 100
-    ANTI_FRAUD_GLARE_THRESHOLD: float = 0.8
-    ANTI_FRAUD_MOIRE_THRESHOLD: int = 50
 
     # Rate Limiting
     RATE_LIMIT_PER_MINUTE: int = 60
